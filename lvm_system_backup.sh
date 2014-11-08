@@ -19,7 +19,7 @@ else
 		true
 	else
 		echo "Can't find config file at $1"
-		echo "Please check the path an come back"
+		echo "Please check the path and come back"
 		exit 1
 	fi
 fi
