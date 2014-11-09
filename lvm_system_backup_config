@@ -4,7 +4,7 @@
 	# Volume Group to backup
 	VG_NAME=""
 	
-	# Size of the snapshot, e.g. 3G.
+	# Size of the snapshot, e.g. 3G
 	SIZE=""
 
 	# Path on remote host where the images are saved. I will create two directorys with hostname and date under it.
