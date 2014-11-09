@@ -81,7 +81,7 @@ function backup_layout {
 
 function backup_lvs {
 	while read lv; do
-		lvcreate --snapshot -L 3G -n ${lv}_snap /dev/$VG_NAME/$lv
+		lvcreate --snapshot -L $SIZE -n ${lv}_snap /dev/$VG_NAME/$lv
 		dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/${lv}.img.gz
 		lvremove -f /dev/$VG_NAME/${lv}_snap
 	done < /tmp/lvs
