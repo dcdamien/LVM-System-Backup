@@ -3,6 +3,13 @@ LVM-System-Backup
 
 The script creates a live backup of every logical volume in a specific volume group using lvm snapshots.
 
+ToDo
+=================
+  Exclude logical volume
+  Snapshot size error handling
+  Backup monitoring via nagios
+  Create Wiki entry for complete system restore
+
 License
 =================
 
