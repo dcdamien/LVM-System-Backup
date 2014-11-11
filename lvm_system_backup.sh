@@ -23,9 +23,7 @@ else
 		exit 1
 	fi
 
-	if [ -f $1 ]; then
-		true
-	else
+	if ! [ -f $1 ]; then
 		echo "Can't find config file at $1"
 		echo "Please check the path and come back"
 		exit 1
