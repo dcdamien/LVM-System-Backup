@@ -7,6 +7,12 @@
 hostname=$(</etc/hostname)
 LOCKFILE=/var/run/lvm_system_backup.lock
 
+# Abort if lockfile is found
+if [ -f $LOCKFILE ]; then
+	echo "Backup is already running!"
+	exit 1
+fi
+
 # Look for config in /etc/default
 if [ -f /etc/default/lvm_system_backup ]; then
         . /etc/default/lvm_system_backup
