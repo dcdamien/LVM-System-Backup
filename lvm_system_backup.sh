@@ -87,7 +87,7 @@ function finish {
                 if [ -e /dev/$VG_NAME/${lv}_snap ]; then
                         lvremove -f /dev/$VG_NAME/${lv}_snap
                 fi
-        done < /tmp/lvs
+        done < $LVS
         
         if [ -f $LOCKFILE]; then
 		rm $LOCKFILE
@@ -113,7 +113,7 @@ function backup_lvs {
 		lvcreate --snapshot -L $SIZE -n ${lv}_snap /dev/$VG_NAME/$lv
 		dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/${lv}.img.gz
 		lvremove -f /dev/$VG_NAME/${lv}_snap
-	done < /tmp/lvs
+	done < $LVS
 }
 
 # Create remote backup dir
