@@ -14,8 +14,8 @@ if [ -f $LOCKFILE ]; then
 fi
 
 # Look for config in /etc/default
-if [ -f /etc/default/lvm_system_backup ]; then
-        . /etc/default/lvm_system_backup
+if [ -f /etc/default/lvm_system_backup_config ]; then
+        . /etc/default/lvm_system_backup_config
 else
 	if [ -z $1 ]; then
 		echo "Can't find config file at default location"
