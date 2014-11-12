@@ -129,3 +129,5 @@ fi
 
 # Backup the logical volumes
 backup_lvs
+
+rm $LOCKFILE
