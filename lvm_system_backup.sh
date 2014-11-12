@@ -89,7 +89,7 @@ function finish {
                 fi
         done < $LVS
         
-        if [ -f $LOCKFILE]; then
+        if [ -f $LOCKFILE ]; then
 		rm $LOCKFILE
 	fi
 }
@@ -134,6 +134,6 @@ fi
 backup_lvs
 
 # Remove lock file
-if [ -f $LOCKFILE]; then
+if [ -f $LOCKFILE ]; then
 	rm $LOCKFILE
 fi
