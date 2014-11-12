@@ -5,7 +5,6 @@ The script creates a live backup of every logical volume in a specific volume gr
 
 ToDo
 =================
-Exclude logical volume
 
 Snapshot size error handling
 
