@@ -130,4 +130,5 @@ fi
 # Backup the logical volumes
 backup_lvs
 
+# Remove lock file
 rm $LOCKFILE
