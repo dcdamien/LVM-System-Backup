@@ -119,6 +119,3 @@ fi
 
 # Backup the logical volumes
 backup_lvs
-
-# Delete lock file
-rm $LOCKFILE
