@@ -6,6 +6,7 @@
 # Define default vars
 hostname=$(</etc/hostname)
 LOCKFILE=/var/run/lvm_system_backup.lock
+LVS=/tmp/lvs
 
 # Abort if lockfile is found
 if [ -f $LOCKFILE ]; then
@@ -69,9 +70,18 @@ DIR=$DIR/$hostname/$datum
 touch $LOCKFILE
 
 # Create list with logical volumes
-lvdisplay $VG_NAME | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > /tmp/lvs
+lvdisplay $VG_NAME | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
 
-# Exit trap to delete the snapshots and the lockfile, if the script terminates to early
+# Exclude logical volumes
+if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+        COUNTER=0
+        while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
+                sed -i "/${LV_EXCLUDE[$COUNTER]}/d" $LVS
+                let COUNTER=COUNTER+1
+        done
+fi
+
+# Exit trap to delete the snapshots and the lockfile
 function finish {
         while read lv; do
                 if [ -e /dev/$VG_NAME/${lv}_snap ]; then
@@ -114,7 +124,7 @@ if [ $BACKUP_BOOT == 1 ]; then
 	dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/boot.img.gz
 
 	# Create image of mbr with grub
-	dd if=$DISK bs=446 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/mbr.img.gz
+	dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/mbr.img.gz
 fi
 
 # Backup the logical volumes
