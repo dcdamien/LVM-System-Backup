@@ -32,3 +32,6 @@
 
 	# Change hostname
 	# hostname=""
+	
+	# Exclude logical volume, e.g =('LV_excluded1' 'LV_excluded2')
+	declare -a LV_EXCLUDE=('LV_swap')
