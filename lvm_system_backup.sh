@@ -131,4 +131,6 @@ fi
 backup_lvs
 
 # Remove lock file
-rm $LOCKFILE
+if [ -f $LOCKFILE]; then
+	rm $LOCKFILE
+fi
