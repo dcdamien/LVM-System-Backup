@@ -88,7 +88,10 @@ function finish {
                         lvremove -f /dev/$VG_NAME/${lv}_snap
                 fi
         done < /tmp/lvs
-        rm $LOCKFILE
+        
+        if [ -f $LOCKFILE]; then
+		rm $LOCKFILE
+	fi
 }
 trap finish EXIT
 
