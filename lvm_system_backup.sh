@@ -54,9 +54,7 @@ else
 fi
 
 # Check if the specified volume group is there
-if [ -d /dev/$VG_NAME ]; then
-	true
-else
+if ! [ -d /dev/$VG_NAME ]; then
 	echo "VG $VG_NAME not found!"
 	exit 1
 fi
