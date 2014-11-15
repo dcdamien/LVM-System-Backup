@@ -152,8 +152,9 @@ fi
 
 # Create dir var with subfolders
 datum=`date +%m/%d/%y`
+DIR_DATE=`date +%m-%d-%y`
 time=`date +"%T"`
-DIR=$DIR/$hostname/$datum
+DIR=$DIR/$hostname/$DIR_DATE
 
 # Create lock file
 if [ $VERBOSE == 1 ]; then
