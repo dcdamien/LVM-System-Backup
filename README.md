@@ -5,11 +5,6 @@ The script creates a live backup of every logical volume in a specific volume gr
 
 ToDo
 =================
-
-Snapshot size error handling
-
-Backup monitoring via nagios
-
 Create Wiki entry for complete system restore
 
 
