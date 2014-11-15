@@ -151,14 +151,19 @@ if ! [ $CHECK_SIZE == 0 ]; then
 fi
 
 # Check if the excluded logical volumes are existing
-COUNTER=0
-while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
-        if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
-                echo -e "${RED}Error: ${NC}Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
-                exit 1
-        fi
-        let COUNTER=COUNTER+1
-done
+if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+	if [ $VERBOSE == 1 ]; then
+		echo -e "${ORANGE}Verbose: ${NC}Checking if excluded LVs are existing"
+	fi
+	COUNTER=0
+	while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
+        	if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
+        	       echo -e "${RED}Error: ${NC}Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
+        	       exit 1
+	     fi
+	       let COUNTER=COUNTER+1
+	done
+fi
 
 # Create dir var with subfolders
 datum=`date +%m/%d/%y`
