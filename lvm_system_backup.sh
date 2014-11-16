@@ -37,8 +37,8 @@ if [ -f /etc/default/lvm_system_backup_config ]; then
 	. /etc/default/lvm_system_backup_config
 	log_verbose "${ORANGE}Verbose: ${NC}Found the config file under /etc/default/lvm_system_backup_config"
 else
-	log_verbose "${RED}Error: ${NC}Can't find the config file at default location"
-	log_verbose "${RED}Error: ${NC}Please specify one as first parameter"
+	log_error "${RED}Error: ${NC}Can't find the config file at default location"
+	log_error "${RED}Error: ${NC}Please specify one as first parameter"
 	log_verbose "${ORANGE}Verbose: ${NC}The location of the config file is in the first parameter. Location: $1"
 
 	if ! [ -f $1 ]; then
