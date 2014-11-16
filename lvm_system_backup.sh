@@ -92,21 +92,21 @@ fi
 
 # Checks for the backup boot feature
 if [ $BACKUP_BOOT == 1 ]; then
-		log_verbose "${ORANGE}Verbose: ${NC}Checking if the disk $DISK exists"
+	log_verbose "${ORANGE}Verbose: ${NC}Checking if the disk $DISK exists"
 
 	if ! [ -b $DISK ]; then
 		log_error "${RED}Error: ${NC}Disk $DISK not found!"
 		exit 1
 	fi
 
-		log_verbose "${ORANGE}Verbose: ${NC}Checking if the boot disk $BOOT exists"
+	log_verbose "${ORANGE}Verbose: ${NC}Checking if the boot disk $BOOT exists"
 
 	if ! [ -b $BOOT ]; then
 		log_error "${RED}Error: ${NC}Boot Disk $BOOT not found!"
 		exit 1
 	fi
 
-		log_verbose "${ORANGE}Verbose: ${NC}Checking if the boot disk $BOOT is mounted on /boot"
+	log_verbose "${ORANGE}Verbose: ${NC}Checking if the boot disk $BOOT is mounted on /boot"
 
 	MOUNT=$(mount | grep /boot | grep -o $BOOT)
 
