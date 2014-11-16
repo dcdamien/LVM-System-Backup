@@ -314,7 +314,7 @@ function backup_boot {
 	copy_boot &> /dev/null
 
         if [ $? -ne 0 ]; then
-                log_error "${RED}Error: ${NC}Couldn't copy the boot disk $BOOT  to $HOST"
+                log_error "${RED}Error: ${NC}Couldn't copy the boot disk $BOOT to $HOST"
                 exit 1
         fi
 
