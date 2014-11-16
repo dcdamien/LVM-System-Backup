@@ -83,7 +83,7 @@ else
 fi
 
 # Check if the specified volume group is there
-	log_verbose "${ORANGE}Verbose: ${NC}Checking if the volume group $VG_NAME exists"
+log_verbose "${ORANGE}Verbose: ${NC}Checking if the volume group $VG_NAME exists"
 
 if ! [ -d /dev/$VG_NAME ]; then
 	log_error "${RED}Error: ${NC}VG $VG_NAME not found!"
