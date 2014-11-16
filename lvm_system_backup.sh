@@ -60,7 +60,7 @@ if [ -z $BACKUP_BOOT ]; then
 fi
 
 # Check if all vars from the config file are configured
-	log_verbose "${ORANGE}Verbose: ${NC}Checking if the BACKUP_BOOT option is enabled"
+log_verbose "${ORANGE}Verbose: ${NC}Checking if the BACKUP_BOOT option is enabled"
 
 if [ $BACKUP_BOOT == 1 ]; then
 		log_verbose "${ORANGE}Verbose: ${NC}BACKUP_BOOT is enabled"
