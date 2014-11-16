@@ -51,7 +51,7 @@ else
 fi
 
 # Check if $BACKUP_BOOT var is set to 0/1
-	log_verbose "${ORANGE}Verbose: ${NC}Checking if the BACKUP_BOOT option is configured"
+log_verbose "${ORANGE}Verbose: ${NC}Checking if the BACKUP_BOOT option is configured"
 
 if [ -z $BACKUP_BOOT ]; then
 	log_error "${RED}Error: ${NC}BACKUP_BOOT is not configured!"
