@@ -40,7 +40,7 @@ if [ -f /etc/default/lvm_system_backup_config ]; then
 		if [ -f $1 ]; then
 			log_verbose "${ORANGE}Verbose: ${NC}Ignoring file at ${1}, because config file was found at default location"
 		else
-			log_verbose "${ORANGE}Verbose: ${NC}Ignoring file at ${1}, because it wasn't found. Since the config file was found
+			log_verbose "${ORANGE}Verbose: ${NC}Ignoring file at ${1}, because it wasn't found. Since the config file was found"
 		fi
 	fi	
 else
