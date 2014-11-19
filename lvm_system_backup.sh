@@ -31,6 +31,12 @@ if [ -f $LOCKFILE ]; then
 	exit 1
 fi
 
+LVDISPLAY=`which lvdisplay`
+if ! [ -f $LVDISPLAY ]; then
+	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
+	log_error "${RED}Error: ${NC}Are you sure your system is using lvm?"
+fi
+
 # Look for config in /etc/default
 if [ -f /etc/default/lvm_system_backup_config ]; then
 	. /etc/default/lvm_system_backup_config
