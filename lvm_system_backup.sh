@@ -37,17 +37,20 @@ if [ -f /etc/default/lvm_system_backup_config ]; then
 	. /etc/default/lvm_system_backup_config
 	log_verbose "${ORANGE}Verbose: ${NC}Found the config file under /etc/default/lvm_system_backup_config"
 else
-	log_error "${RED}Error: ${NC}Can't find the config file at default location"
-	log_error "${RED}Error: ${NC}Please specify one as first parameter"
-	log_verbose "${ORANGE}Verbose: ${NC}The location of the config file is in the first parameter. Location: $1"
-
+	if [ -z $1 ]; then
+		log_error "${RED}Error: ${NC}Can't find the config file at default location"
+		log_error "${RED}Error: ${NC}Please specify one as first parameter"
+	fi
+	
 	if ! [ -f $1 ]; then
 		log_error "${RED}Error: ${NC}Can't find config file at $1"
 		log_error "${RED}Error: ${NC}Please check the path and come back"
-
-		log_verbose "${ORANGE}Verbose: ${NC}Couldn't find the config file neither at the default path nor as the first parameter"
 		exit 1
+	else	
+		log_verbose "${ORANGE}Verbose: ${NC}The location of the config file is in the first parameter. Location: $1"
 	fi
+	
+	log_verbose "${ORANGE}Verbose: ${NC}Couldn't find the config file neither at the default path nor as the first parameter"
 fi
 
 # Check if $BACKUP_BOOT var is set to 0/1
