@@ -407,7 +407,6 @@ fi
 # Backup lvm and mbr layout
 log_verbose "${ORANGE}Verbose: ${NC}Starting the backups of lvm and mbr layout..."
 backup_layout
-log_verbose "${ORANGE}Verbose: ${NC}...finished"
 
 if [ $BACKUP_BOOT == 1 ]; then
 	backup_boot
