@@ -103,8 +103,8 @@ if [ $BACKUP_BOOT == 1 ]; then
 		exit 1
 	fi
 else
-		log_verbose "${ORANGE}Verbose: ${NC}BACKUP_BOOT is disabled"
-		log_verbose "${ORANGE}Verbose: ${NC}Checking if all necessary vars are configured"
+	log_verbose "${ORANGE}Verbose: ${NC}BACKUP_BOOT is disabled"
+	log_verbose "${ORANGE}Verbose: ${NC}Checking if all necessary vars are configured"
 
 	if [[ -z "$VG_NAME" || -z "$DIR" || -z "$HOST" || -z "$USER" ]]; then
 		log_error "${RED}Error: ${NC}Important vars are missing!"
