@@ -37,7 +37,7 @@ if [ -f /etc/default/lvm_system_backup_config ]; then
 	. /etc/default/lvm_system_backup_config
 	log_verbose "${ORANGE}Verbose: ${NC}Found the config file under /etc/default/lvm_system_backup_config"
 	if ! [ -z $1 ]; then
-		if [ $1 == '/etc/default/lvm_system_backup_config']; then
+		if [ $1 == '/etc/default/lvm_system_backup_config' ]; then
 			log_verbose "${ORANGE}Verbose: ${NC}$1 is the default location. You don't have to specify this"
 		else
 			if [ -f $1 ]; then
