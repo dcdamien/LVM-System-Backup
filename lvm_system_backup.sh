@@ -31,6 +31,7 @@ if [ -f $LOCKFILE ]; then
 	exit 1
 fi
 
+# Check if lvdisplay is found
 LVDISPLAY=`which lvdisplay`
 if ! [ -f $LVDISPLAY ]; then
 	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
