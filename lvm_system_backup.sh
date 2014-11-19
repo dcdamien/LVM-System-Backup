@@ -391,7 +391,7 @@ function backup_boot {
 }
 
 # Checking server connection
-log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to the storage server"
+log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
 check_ssh
 
 # Create remote backup dir
