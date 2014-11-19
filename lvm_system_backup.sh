@@ -5,7 +5,6 @@
 
 # Define default vars
 start=`date +%s`
-hostname=$(</etc/hostname)
 LOCKFILE=/var/run/lvm_system_backup.lock
 NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
 LVS=/tmp/lvs
@@ -63,6 +62,18 @@ else
 	fi
 	
 	log_verbose "${ORANGE}Verbose: ${NC}Couldn't find the config file neither at the default path nor as the first parameter"
+fi
+
+# Get hostname
+if [ -z $hostname ]; then
+	if [ -f /etc/hostname ]; then
+		hostname=$(</etc/hostname)
+	elif [ -f /bin/hostname ]; then
+		hostname=$(/bin/hostname)
+	else
+		log_error "${RED}Error: ${NC}Can't find hostname"
+		log_error "${RED}Error: ${NC}Please specify one via the config file"
+	fi
 fi
 
 # Check if $BACKUP_BOOT var is set to 0/1
