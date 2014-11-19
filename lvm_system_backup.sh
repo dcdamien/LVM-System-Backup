@@ -45,7 +45,7 @@ if [ -f /etc/default/lvm_system_backup_config ]; then
 				log_verbose "${ORANGE}Verbose: ${NC}Ignoring file at ${1}, because it wasn't found. I will use the default file at /etc/default/lvm_system_backup_config"
 			fi
 		fi
-	fi	
+	fi
 else
 	if [ -z $1 ]; then
 		log_error "${RED}Error: ${NC}Can't find the config file at default location"
