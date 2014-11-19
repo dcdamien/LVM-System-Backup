@@ -264,7 +264,10 @@ function backup_layout {
 	log_verbose "${ORANGE}Verbose: ${NC}Backing up partiton table to /tmp/part_table"
 
 	if [ -d /tmp ]; then
-		touch /tmp/.test
+		if [ -f /tmp/.test ]; then
+			rm /tmp/.test &> /dev/null
+		fi
+		touch /tmp/.test &> /dev/null
 		if [ $? -ne 0 ]; then
 			log_error "${RED}Error: ${NC}/tmp not writeable"
 			exit 1
