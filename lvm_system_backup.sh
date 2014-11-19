@@ -231,6 +231,27 @@ function finish {
 }
 trap finish EXIT
 
+function check_ssh {
+	nc -z $HOST 22 &> /dev/null
+	
+	if [ $? -ne 0 ]; then
+		log_error "${RED}Error: ${NC}Cannot connect to host $HOST via port 22"
+		exit 1
+	fi
+	
+	if ! [ -d ~/.ssh ]; then
+		log_verbose "${RED}Error: ${NC}Can't find ~/.ssh directory. No public key authentication possible."
+		log_verbose "${RED}Error: ${NC}You need to setup public authentication with the server that will store your backups."
+		log_verbose "${RED}Error: ${NC}For testing purpose you can also manually type a password."
+	fi
+	
+	if ! [ -f ~/.ssh/id_rsa ]; then
+		log_verbose "${RED}Error: ${NC}Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
+		log_verbose "${RED}Error: ${NC}You need to setup public authentication with the server that will store your backups."
+		log_verbose "${RED}Error: ${NC}For testing purpose you can also manually type a password."
+	fi	
+}
+
 function backup_layout {
 	# Backup partition table
 	log_verbose "${ORANGE}Verbose: ${NC}Backing up partiton table to /tmp/part_table"
@@ -358,6 +379,10 @@ function backup_boot {
         fi
 
 }
+
+# Checking server connection
+log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to the storage server"
+check_ssh
 
 # Create remote backup dir
 log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
