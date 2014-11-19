@@ -51,16 +51,16 @@ else
 		log_error "${RED}Error: ${NC}Can't find the config file at default location"
 		log_error "${RED}Error: ${NC}Please specify one as first parameter"
 	fi
-	
+
 	if ! [ -f $1 ]; then
 		log_error "${RED}Error: ${NC}Can't find config file at $1"
 		log_error "${RED}Error: ${NC}Please check the path and come back"
 		exit 1
-	else	
+	else
 		. $1
 		log_verbose "${ORANGE}Verbose: ${NC}The location of the config file is in the first parameter. Location: $1"
 	fi
-	
+
 	log_verbose "${ORANGE}Verbose: ${NC}Couldn't find the config file neither at the default path nor as the first parameter"
 fi
 
@@ -68,11 +68,16 @@ fi
 if [ -z $hostname ]; then
 	if [ -f /etc/hostname ]; then
 		hostname=$(</etc/hostname)
+		log_verbose "${ORANGE}Verbose: ${NC}Reading hostname from /etc/hostname"
+		log_verbose "${ORANGE}Verbose: ${NC}Hostname: $hostname"
 	elif [ -f /bin/hostname ]; then
 		hostname=$(/bin/hostname)
+		log_verbose "${ORANGE}Verbose: ${NC}Getting hostname via /bin/hostname because /etc/hostname is missing"
+		log_verbose "${ORANGE}Verbose: ${NC}Hostname: $hostname"
 	else
 		log_error "${RED}Error: ${NC}Can't find hostname"
 		log_error "${RED}Error: ${NC}Please specify one via the config file"
+		exit 1
 	fi
 fi
 
