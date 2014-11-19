@@ -232,7 +232,7 @@ function finish {
 trap finish EXIT
 
 function check_ssh {
-	nc -z $HOST 22 &> /dev/null
+	nc -z -w5 $HOST 22 &> /dev/null
 	
 	if [ $? -ne 0 ]; then
 		log_error "${RED}Error: ${NC}Cannot connect to host $HOST via port 22"
