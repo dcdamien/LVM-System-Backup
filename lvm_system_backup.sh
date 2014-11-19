@@ -47,6 +47,7 @@ else
 		log_error "${RED}Error: ${NC}Please check the path and come back"
 		exit 1
 	else	
+		. $1
 		log_verbose "${ORANGE}Verbose: ${NC}The location of the config file is in the first parameter. Location: $1"
 	fi
 	
