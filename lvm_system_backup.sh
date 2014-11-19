@@ -193,7 +193,7 @@ log_verbose "${ORANGE}Verbose: ${NC}Creating list $LVS with all logical volumes 
 lvdisplay $VG_NAME | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
 
 if [ $? -ne 0 ]; then
-	log_error "${RED}Error: ${NC}Couldn't creat the list with logical volumes"
+	log_error "${RED}Error: ${NC}Couldn't create the list with logical volumes"
 	exit 1
 fi
 
