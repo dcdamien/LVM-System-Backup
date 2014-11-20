@@ -271,31 +271,29 @@ function samba_backup {
 					exit 1
 				fi
 			fi
-			
-			log_verbose "${ORANGE}Verbose: ${NC}Compressing /tmp/samba to /tmp/samba4.tar.gz"
-			tar czf /tmp/samba4.tar.gz /tmp/samba &>/dev/null
-			if [ $? -ne 0 ]; then
-				log_error "${RED}Error: ${NC}Couldn't compress /tmp/samba to /tmp/samba4.tar.gz"
-			fi
-				
-			log_verbose "${ORANGE}Verbose: ${NC}Sending /tmp/samba4.tar.gz to $HOST"
-			scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4_${datum}_$time.tar.gz &> /dev/null
-			if [ $? -ne 0 ]; then
-				log_error "${RED}Error: ${NC}Error while sending /tmp/samba4.tar.gz to $HOST"
-			fi
-			
-			log_verbose "${ORANGE}Verbose: ${NC}Removing /tmp/samba4.tar.gz"
-			if [ -f /tmp/samba4.tar.gz ]; then
-				rm /tmp/samba4.tar.gz &> /dev/null
-			fi
-			
-			log_verbose "${ORANGE}Verbose: ${NC}Removing /tmp/samba"
-			if [ -d /tmp/samba ]; then
-				rm -r /tmp/samba &> /dev/null
-			fi
-				
 			let COUNTER=COUNTER+1
 		done
+		log_verbose "${ORANGE}Verbose: ${NC}Compressing /tmp/samba to /tmp/samba4.tar.gz"
+		tar czf /tmp/samba4.tar.gz /tmp/samba &>/dev/null
+		if [ $? -ne 0 ]; then
+			log_error "${RED}Error: ${NC}Couldn't compress /tmp/samba to /tmp/samba4.tar.gz"
+		fi
+				
+		log_verbose "${ORANGE}Verbose: ${NC}Sending /tmp/samba4.tar.gz to $HOST"
+		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4_${datum}_$time.tar.gz &> /dev/null
+		if [ $? -ne 0 ]; then
+			log_error "${RED}Error: ${NC}Error while sending /tmp/samba4.tar.gz to $HOST"
+		fi
+			
+		log_verbose "${ORANGE}Verbose: ${NC}Removing /tmp/samba4.tar.gz"
+		if [ -f /tmp/samba4.tar.gz ]; then
+			rm /tmp/samba4.tar.gz &> /dev/null
+		fi
+			
+		log_verbose "${ORANGE}Verbose: ${NC}Removing /tmp/samba"
+		if [ -d /tmp/samba ]; then
+			rm -r /tmp/samba &> /dev/null
+		fi
 	fi
 }
 
