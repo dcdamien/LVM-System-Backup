@@ -8,14 +8,13 @@ start=`date +%s`
 LOCKFILE=/var/run/lvm_system_backup.lock
 NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
 LVS=/tmp/lvs
-RED='\e[0;31m'
-NC='\e[0m'
-ORANGE='\e[0;33m'
-GREEN='\e[0;32m'
-YELLOW='\e[1;33m'
+NC='\e[0m'			# Message
+RED='\e[0;31m'			# Error
+ORANGE='\e[0;33m'		# Warning
+GREEN='\e[0;32m'		# Success
+MAGENTA='\e[95m'		# Verbose
 VERBOSE=0
 BACKUP_SAMBA=0
-MAGENTA='\e[95m'
 
 # Define verbose function
 function log_verbose() {
