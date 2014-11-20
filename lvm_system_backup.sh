@@ -247,16 +247,19 @@ function check_ssh {
 	fi
 	
 	if ! [ -d ~/.ssh ]; then
-		log_verbose "${RED}Error: ${NC}Can't find ~/.ssh directory. No public key authentication possible."
-		log_verbose "${RED}Error: ${NC}You need to setup public authentication with the server that will store your backups."
-		log_verbose "${RED}Error: ${NC}For testing purpose you can also manually type a password."
+		log_verbose "${ORANGE}Verbose: ${NC}Can't find ~/.ssh directory. No public key authentication possible."
+		log_verbose "${ORANGE}Verbose: ${NC}You need to setup public authentication with the server that will store your backups."
+		log_verbose "${ORANGE}Verbose: ${NC}For testing purpose you can also manually type a password."
 	fi
 	
 	if ! [ -f ~/.ssh/id_rsa ]; then
-		log_verbose "${RED}Error: ${NC}Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
-		log_verbose "${RED}Error: ${NC}You need to setup public authentication with the server that will store your backups."
-		log_verbose "${RED}Error: ${NC}For testing purpose you can also manually type a password."
-	fi	
+		log_verbose "${ORANGE}Verbose: ${NC}Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
+		log_verbose "${ORANGE}Verbose: ${NC}You need to setup public authentication with the server that will store your backups."
+		log_verbose "${ORANGE}Verbose: ${NC}For testing purpose you can also manually type a password."
+	else
+		log_verbose "${ORANGE}Verbose: ${NC}Checking if key permissions is set to 600"
+		stat --format=%a
+	fi
 }
 
 function backup_layout {
@@ -391,8 +394,8 @@ function backup_boot {
 }
 
 # Checking server connection
-log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
-check_ssh
+#log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
+#check_ssh
 
 # Create remote backup dir
 log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
