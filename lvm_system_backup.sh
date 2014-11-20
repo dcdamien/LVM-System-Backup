@@ -498,6 +498,15 @@ function backup_boot {
 log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
 check_ssh
 
+# Create remote backup dir
+log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
+ssh ${USER}@$HOST mkdir -p $DIR &>/dev/null
+if [ $? -ne 0 ]; then
+	log_error "${RED}Error: ${NC}Couldn't create the remote dir $DIR to store the backups"
+	exit 1
+fi
+
+# Create samba backup
 log_verbose "${ORANGE}Verbose: ${NC}Checking if i should create a samba backup"
 if [ $BACKUP_SAMBA == 1 ]; then
 	log_verbose "${ORANGE}Verbose: ${NC}BACKUP_SAMBA is set to $BACKUP_SAMBA. Backup will be created"
@@ -506,13 +515,6 @@ else
 	log_verbose "${ORANGE}Verbose: ${NC}BACKUP_SAMBA is set to $BACKUP_SAMBA. No backup will be created"
 fi
 
-# Create remote backup dir
-log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
-ssh ${USER}@$HOST mkdir -p $DIR &>/dev/null
-if [ $? -ne 0 ]; then
-	log_error "${RED}Error: ${NC}Couldn't create the remote dir $DIR to store the backups"
-	exit 1
-fi
 
 # Backup lvm and mbr layout
 log_verbose "${ORANGE}Verbose: ${NC}Starting the backups of lvm and mbr layout..."
