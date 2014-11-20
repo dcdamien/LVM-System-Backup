@@ -19,7 +19,7 @@ BACKUP_SAMBA=0
 # Define verbose function
 function log_verbose() {
 	if [[ $VERBOSE -eq 1 ]]; then
-		echo -e "${ORANGE}Verbose: ${NC}$@"
+		echo -e "${YELLOW}Verbose: ${NC}$@"
 	fi
 }
 
