@@ -256,9 +256,13 @@ function check_ssh {
 		log_verbose "${ORANGE}Verbose: ${NC}Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
 		log_verbose "${ORANGE}Verbose: ${NC}You need to setup public authentication with the server that will store your backups."
 		log_verbose "${ORANGE}Verbose: ${NC}For testing purpose you can also manually type a password."
-	else
+	elif [ -f ~/.ssh/id_rsa ]; then
 		log_verbose "${ORANGE}Verbose: ${NC}Checking if key permissions is set to 600"
-		stat --format=%a
+		TEST=$(stat --format=%a ~/.ssh/id_rsa)
+		if [ $TEST != 600 ]; then
+			log_verbose "${ORANGE}Verbose: ${NC}Please set ~/.ssh/id_rsa permissions to 600"
+			log_verbose "${ORANGE}Verbose: ${NC}I will continue anyway!"
+		fi
 	fi
 }
 
