@@ -257,7 +257,7 @@ function samba_backup {
 				done
 				
 				log_verbose "${ORANGE}Verbose: ${NC}Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
-				rsync -avzq --exclude *.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba &>/dev/null
+				rsync -avzq --exclude ${SAMBA_DIRS[$COUNTER]}/*.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba &>/dev/null
 				if [ $? -ne 0 ]; then
 					log_error "${RED}Error: ${NC}Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
 					exit 1
