@@ -259,7 +259,7 @@ function samba_backup {
 				
 				log_verbose "${ORANGE}Verbose: ${NC}Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
 				mkdir /tmp/samba/${SAMBA_DIRS[$COUNTER]} &>/dev/null
-				rsync -avzq --exclude ${SAMBA_DIRS[$COUNTER]}/*.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba/${SAMBA_DIRS[$COUNTER]} &>/dev/null
+				rsync -avzq --exclude ${SAMBA_DIRS[$COUNTER]}/*.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba/${SAMBA_DIRS[$COUNTER]}
 				if [ $? -ne 0 ]; then
 					log_error "${RED}Error: ${NC}Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
 					exit 1
