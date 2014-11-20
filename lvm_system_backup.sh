@@ -12,6 +12,7 @@ RED='\e[0;31m'
 NC='\e[0m'
 ORANGE='\e[0;33m'
 GREEN='\e[0;32m'
+YELLOW='\e[1;33m'
 VERBOSE=0
 BACKUP_SAMBA=0
 
