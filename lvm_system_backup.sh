@@ -38,6 +38,7 @@ LVDISPLAY=`which lvdisplay`
 if [ -z $LVDISPLAY ]; then
 	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
 	log_error "${RED}Error: ${NC}Are you sure your system is using lvm?"
+	exit 1
 else
 	log_verbose "${ORANGE}Verbose: ${NC}lvdisplay found at $LVDISPLAY"
 fi
