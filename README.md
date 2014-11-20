@@ -19,6 +19,8 @@ Add warnings
 
 Option for disabling system backup
 
+log_functions
+
 License
 =================
 
