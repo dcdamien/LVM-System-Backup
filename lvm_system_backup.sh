@@ -262,7 +262,12 @@ function samba_backup {
 					log_error "${RED}Error: ${NC}Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
 					exit 1
 				fi
+				
+				log_verbose "${ORANGE}Verbose: ${NC}Deleting ldb.bak files from ${SAMBA_DIRS[$COUNTER]}"
 				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
+				if [ $? -ne 0 ]; then
+					log_error "${RED}Error: ${NC}Deletion of ldb.bak files in ${SAMBA_DIRS[$COUNTER]} failed"
+				fi
 			else
 				log_verbose "${ORANGE}Verbose: ${NC}Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
 				rsync -avzq ${SAMBA_DIRS[$COUNTER]} /tmp/samba &>/dev/null
@@ -322,7 +327,6 @@ function finish {
 	if [ -d /tmp/samba ]; then
 		rm -r /tmp/samba &> /dev/null
 	fi
-
 	log_verbose "${ORANGE}Verbose: ${NC}Done"
 }
 trap finish EXIT
