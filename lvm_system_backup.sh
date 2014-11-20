@@ -264,7 +264,7 @@ function samba_backup {
 				fi
 				
 				log_verbose "${ORANGE}Verbose: ${NC}Deleting ldb.bak files from ${SAMBA_DIRS[$COUNTER]}"
-				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
+				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak
 				if [ $? -ne 0 ]; then
 					log_error "${RED}Error: ${NC}Deletion of ldb.bak files in ${SAMBA_DIRS[$COUNTER]} failed"
 				fi
