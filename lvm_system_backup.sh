@@ -280,7 +280,7 @@ function samba_backup {
 		fi
 				
 		log_verbose "${ORANGE}Verbose: ${NC}Sending /tmp/samba4.tar.gz to $HOST"
-		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4_${datum}_$time.tar.gz &> /dev/null
+		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4.tar.gz
 		if [ $? -ne 0 ]; then
 			log_error "${RED}Error: ${NC}Error while sending /tmp/samba4.tar.gz to $HOST"
 		fi
