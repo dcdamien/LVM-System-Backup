@@ -15,7 +15,7 @@ GREEN='\e[0;32m'
 YELLOW='\e[1;33m'
 VERBOSE=0
 BACKUP_SAMBA=0
-MAGENTA='\e[95mLight magenta'
+MAGENTA='\e[95m'
 
 # Define verbose function
 function log_verbose() {
