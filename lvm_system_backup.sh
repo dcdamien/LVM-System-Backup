@@ -19,7 +19,7 @@ BACKUP_SAMBA=0
 # Define verbose function
 function log_verbose() {
 	if [[ $VERBOSE -eq 1 ]]; then
-		echo -e "$@"
+		echo -e "${ORANGE}Verbose: ${NC}$@"
 	fi
 }
 
@@ -68,7 +68,7 @@ else
 fi
 
 # Check if lvdisplay is found
-log_verbose "${ORANGE}Verbose: ${NC}Checking if lvdisplay is installed"
+log_verbose "Checking if lvdisplay is installed"
 LVDISPLAY=`which lvdisplay`
 if [ -z $LVDISPLAY ]; then
 	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
