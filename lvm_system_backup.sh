@@ -13,6 +13,7 @@ NC='\e[0m'
 ORANGE='\e[0;33m'
 GREEN='\e[0;32m'
 VERBOSE=0
+BACKUP_SAMBA=0
 
 # Define verbose function
 function log_verbose() {
@@ -494,6 +495,14 @@ function backup_boot {
 # Checking server connection
 log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
 check_ssh
+
+log_verbose "${ORANGE}Verbose: ${NC}Checking if i should create a samba backup"
+if [ $BACKUP_SAMBA == 1 ]; then
+	log_verbose "${ORANGE}Verbose: ${NC}Yep, i will create one"
+	samba_backup
+else
+	log_verbose "${ORANGE}Verbose: ${NC}No, BACKUP_SAMBA is set to $BACKUP_SAMBA""
+fi
 
 # Create remote backup dir
 log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
