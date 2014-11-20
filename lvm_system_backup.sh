@@ -260,7 +260,7 @@ function samba_backup {
 				rsync -avzq --exclude *.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba &>/dev/null
 				if [ $? -ne 0 ]; then
 					log_error "${RED}Error: ${NC}Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
-					exitexit 1
+					exit 1
 				fi
 				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
 			else
