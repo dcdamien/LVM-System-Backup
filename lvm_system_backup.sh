@@ -260,6 +260,7 @@ function check_ssh {
 		log_verbose "${ORANGE}Verbose: ${NC}Checking if key permissions is set to 600"
 		TEST=$(stat --format=%a ~/.ssh/id_rsa)
 		if [ $TEST != 600 ]; then
+			log_verbose "${ORANGE}Verbose: ${NC}Your key permission is $TEST"
 			log_verbose "${ORANGE}Verbose: ${NC}Please set ~/.ssh/id_rsa permissions to 600"
 			log_verbose "${ORANGE}Verbose: ${NC}I will continue anyway!"
 		fi
