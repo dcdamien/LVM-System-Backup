@@ -216,33 +216,33 @@ if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
         done
 fi
 
-# Code from the offical samba_backup script by Matthieu Patou
+# Modified code from the offical samba_backup script by Matthieu Patou
 function samba_backup {
-for d in $DIRS;do
-        relativedirname=`find . -type d -name "$d" -prune`
-        n=`echo $d | sed 's/\//_/g'`
-        if [ "$d" = "private" ]; then
-                find $relativedirname -name "*.ldb.bak" -exec rm {} \;
-                for ldb in `find $relativedirname -name "*.ldb"`; do
-                        tdbbackup $ldb
-                        if [ $? -ne 0 ]; then
-                                echo "Error while backuping $ldb"
-                                exit 1
-                        fi
-                done
-                tar cjf ${WHERE}/samba4_${n}.${WHEN}.tar.bz2  $relativedirname --exclude=*.ldb >/dev/null 2>&1
-                if [ $? -ne 0 ]; then
-                        echo "Error while archiving ${WHERE}/samba4_${n}.${WHEN}.tar.bz2"
-                        exit 1
-                fi
-                find $relativedirname -name "*.ldb.bak" -exec rm {} \;
-        else
-                tar cjf ${WHERE}/${n}.${WHEN}.tar.bz2  $relativedirname >/dev/null 2>&1
-                if [ $? -ne 0 ]; then
-                        echo "Error while archiving ${WHERE}/${n}.${WHEN}.tar.bz2"
-                        exit 1
-                fi
-        fi
+	for d in $SAMBA_DIRS;do
+	        relativedirname=`find . -type d -name "$d" -prune`
+	        n=`echo $d | sed 's/\//_/g'`
+	        if [ "$d" = "private" ]; then
+	                find $relativedirname -name "*.ldb.bak" -exec rm {} \;
+	                for ldb in `find $relativedirname -name "*.ldb"`; do
+	                        tdbbackup $ldb
+	                        if [ $? -ne 0 ]; then
+	                                log_error "${RED}Error: ${NC}Error while backuping $ldb"
+	                                exit 1
+	                        fi
+	                done
+	                tar cjf ${WHERE}/samba4_${n}.${WHEN}.tar.bz2  $relativedirname --exclude=*.ldb >/dev/null 2>&1
+	                if [ $? -ne 0 ]; then
+	                        log_error "${RED}Error: ${NC}Error while archiving ${WHERE}/samba4_${n}.${WHEN}.tar.bz2"
+	                        exit 1
+	                fi
+	                find $relativedirname -name "*.ldb.bak" -exec rm {} \;
+	        else
+	                tar cjf ${WHERE}/${n}.${WHEN}.tar.bz2  $relativedirname >/dev/null 2>&1
+	                if [ $? -ne 0 ]; then
+	                        log_error "${RED}Error: ${NC}Error while archiving ${WHERE}/${n}.${WHEN}.tar.bz2"
+	                        exit 1
+	                fi
+	        fi
 done
 }
 
