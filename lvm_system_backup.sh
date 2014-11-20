@@ -227,6 +227,17 @@ fi
 
 # Modified code from the offical samba_backup script in source4/scripting/bin/samba_backup by Matthieu Patou
 function samba_backup {
+	log_verbose "${ORANGE}Verbose: ${NC}Checking if rsync is installed"
+	VRSYNC=`which rsync`
+	if [ -z $VRSYNC ]; then
+		log_error "${RED}Error: ${NC}Cannot find rsync"
+		log_error "${RED}Error: ${NC}Please install rync"
+		exit 1
+	else
+		log_verbose "${ORANGE}Verbose: ${NC}rsync is at $VRSYNC"
+	fi
+	
+	
 	log_verbose "${ORANGE}Verbose: ${NC}Checking if tdbbackkup is there"
 	TDBBACKUP=`which tdbbackup`
 	if [ -z $TDBBACKUP ]; then
