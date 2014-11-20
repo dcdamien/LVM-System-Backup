@@ -24,114 +24,114 @@ function log_verbose() {
 }
 
 function log_error() {
-	>&2 echo -e "$@"
+	>&2 echo -e "${RED}Error: ${NC}$@"
 }
 
 # Abort if lockfile is found
 if [ -f $LOCKFILE ]; then
-	log_error "${RED}Error: ${NC}Backup is already running!"
+	log_error "Backup is already running!"
 	exit 1
 fi
 
 # Look for config in /etc/default
 if [ -f /etc/default/lvm_system_backup_config ]; then
 	. /etc/default/lvm_system_backup_config
-	log_verbose "${ORANGE}Verbose: ${NC}Found the config file under /etc/default/lvm_system_backup_config"
+	log_verbose "Found the config file under /etc/default/lvm_system_backup_config"
 	if ! [ -z $1 ]; then
 		if [ $1 == '/etc/default/lvm_system_backup_config' ]; then
-			log_verbose "${ORANGE}Verbose: ${NC}$1 is the default location. You don't have to specify this"
+			log_verbose "$1 is the default location. You don't have to specify this"
 		else
 			if [ -f $1 ]; then
-				log_verbose "${ORANGE}Verbose: ${NC}Ignoring file at ${1}, because config file was found at default location"
+				log_verbose "Ignoring file at ${1}, because config file was found at default location"
 			else
-				log_verbose "${ORANGE}Verbose: ${NC}Ignoring file at ${1}, because it wasn't found. I will use the default file at /etc/default/lvm_system_backup_config"
+				log_verbose "Ignoring file at ${1}, because it wasn't found. I will use the default file at /etc/default/lvm_system_backup_config"
 			fi
 		fi
 	fi
 else
 	if [ -z $1 ]; then
-		log_error "${RED}Error: ${NC}Can't find the config file at default location"
-		log_error "${RED}Error: ${NC}Please specify one as first parameter"
+		log_error "Can't find the config file at default location"
+		log_error "Please specify one as first parameter"
 		exit 1
 	fi
 
 	if ! [ -f $1 ]; then
-		log_error "${RED}Error: ${NC}Can't find config file at $1"
-		log_error "${RED}Error: ${NC}Please check the path and come back"
+		log_error "Can't find config file at $1"
+		log_error "Please check the path and come back"
 		exit 1
 	else
 		. $1
-		log_verbose "${ORANGE}Verbose: ${NC}The location of the config file is in the first parameter. Location: $1"
+		log_verbose "The location of the config file is in the first parameter. Location: $1"
 	fi
 
-	log_verbose "${ORANGE}Verbose: ${NC}Couldn't find the config file neither at the default path nor as the first parameter"
+	log_verbose "Couldn't find the config file neither at the default path nor as the first parameter"
 fi
 
 # Check if lvdisplay is found
 log_verbose "Checking if lvdisplay is installed"
 LVDISPLAY=`which lvdisplay`
 if [ -z $LVDISPLAY ]; then
-	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
-	log_error "${RED}Error: ${NC}Are you sure your system is using lvm?"
+	log_error "Couldn't find lvdisplay"
+	log_error "Are you sure your system is using lvm?"
 	exit 1
 else
-	log_verbose "${ORANGE}Verbose: ${NC}lvdisplay found at $LVDISPLAY"
+	log_verbose "lvdisplay found at $LVDISPLAY"
 fi
 
 # Get hostname
 if [ -z $hostname ]; then
 	if [ -f /etc/hostname ]; then
 		hostname=$(</etc/hostname)
-		log_verbose "${ORANGE}Verbose: ${NC}Reading hostname from /etc/hostname"
-		log_verbose "${ORANGE}Verbose: ${NC}Hostname: $hostname"
+		log_verbose "Reading hostname from /etc/hostname"
+		log_verbose "Hostname: $hostname"
 	elif [ -f /bin/hostname ]; then
 		hostname=$(/bin/hostname)
-		log_verbose "${ORANGE}Verbose: ${NC}Getting hostname via /bin/hostname because /etc/hostname is missing"
-		log_verbose "${ORANGE}Verbose: ${NC}Hostname: $hostname"
+		log_verbose "Getting hostname via /bin/hostname because /etc/hostname is missing"
+		log_verbose "Hostname: $hostname"
 	else
-		log_error "${RED}Error: ${NC}Can't find hostname"
-		log_error "${RED}Error: ${NC}Please specify one via the config file"
+		log_error "Can't find hostname"
+		log_error "Please specify one via the config file"
 		exit 1
 	fi
 fi
 
 # Check if $BACKUP_BOOT var is set to 0/1
-log_verbose "${ORANGE}Verbose: ${NC}Checking if the BACKUP_BOOT option is configured"
+log_verbose "Checking if the BACKUP_BOOT option is configured"
 
 if [ -z $BACKUP_BOOT ]; then
-	log_error "${RED}Error: ${NC}BACKUP_BOOT is not configured!"
-	log_error "${RED}Error: ${NC}Please check the config file!"
+	log_error "BACKUP_BOOT is not configured!"
+	log_error "Please check the config file!"
 	exit 1
 fi
 
 # Check if all vars from the config file are configured
-log_verbose "${ORANGE}Verbose: ${NC}Checking if the BACKUP_BOOT option is enabled"
+log_verbose "Checking if the BACKUP_BOOT option is enabled"
 
 if [ $BACKUP_BOOT == 1 ]; then
-		log_verbose "${ORANGE}Verbose: ${NC}BACKUP_BOOT is enabled"
-		log_verbose "${ORANGE}Verbose: ${NC}Checking if all necessary vars are configured"
+		log_verbose "BACKUP_BOOT is enabled"
+		log_verbose "Checking if all necessary vars are configured"
 
 	if [[ -z "$VG_NAME" || -z "$DIR" || -z "$HOST" || -z "$USER" || -z "$DISK" || -z "$BOOT" ]]; then
-		log_error "${RED}Error: ${NC}Important vars are missing!"
-		log_error "${RED}Error: ${NC}Please check the config file!"
+		log_error "Important vars are missing!"
+		log_error "Please check the config file!"
 		exit 1
 	fi
 else
-	log_verbose "${ORANGE}Verbose: ${NC}BACKUP_BOOT is disabled"
-	log_verbose "${ORANGE}Verbose: ${NC}Checking if all necessary vars are configured"
+	log_verbose "BACKUP_BOOT is disabled"
+	log_verbose "Checking if all necessary vars are configured"
 
 	if [[ -z "$VG_NAME" || -z "$DIR" || -z "$HOST" || -z "$USER" ]]; then
-		log_error "${RED}Error: ${NC}Important vars are missing!"
-		log_error "${RED}Error: ${NC}Please check the config file!"
+		log_error "Important vars are missing!"
+		log_error "Please check the config file!"
 		exit 1
 	fi
 fi
 
 # Check if the specified volume group is there
-log_verbose "${ORANGE}Verbose: ${NC}Checking if the volume group $VG_NAME exists"
+log_verbose "Checking if the volume group $VG_NAME exists"
 
 if ! [ -d /dev/$VG_NAME ]; then
-	log_error "${RED}Error: ${NC}VG $VG_NAME not found!"
+	log_error "VG $VG_NAME not found!"
 	exit 1
 fi
 
