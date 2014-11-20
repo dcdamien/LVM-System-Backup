@@ -7,6 +7,10 @@ ToDo
 =================
 Create Wiki entry for complete system restore
 
+Create Wiki entry for samba restore
+
+Create Wiki entry for MySQL database restore
+
 Samba ADDC backup
 
 MySQL database dump
