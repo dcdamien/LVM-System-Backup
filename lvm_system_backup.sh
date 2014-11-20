@@ -498,10 +498,10 @@ check_ssh
 
 log_verbose "${ORANGE}Verbose: ${NC}Checking if i should create a samba backup"
 if [ $BACKUP_SAMBA == 1 ]; then
-	log_verbose "${ORANGE}Verbose: ${NC}Yep, i will create one"
+	log_verbose "${ORANGE}Verbose: ${NC}BACKUP_SAMBA is set to $BACKUP_SAMBA. Backup will be created"
 	samba_backup
 else
-	log_verbose "${ORANGE}Verbose: ${NC}No, BACKUP_SAMBA is set to $BACKUP_SAMBA"
+	log_verbose "${ORANGE}Verbose: ${NC}BACKUP_SAMBA is set to $BACKUP_SAMBA. No backup will be created"
 fi
 
 # Create remote backup dir
