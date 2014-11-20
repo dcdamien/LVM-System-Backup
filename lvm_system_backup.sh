@@ -15,11 +15,12 @@ GREEN='\e[0;32m'
 YELLOW='\e[1;33m'
 VERBOSE=0
 BACKUP_SAMBA=0
+MAGENTA='\e[95mLight magenta'
 
 # Define verbose function
 function log_verbose() {
 	if [[ $VERBOSE -eq 1 ]]; then
-		echo -e "${YELLOW}Verbose: ${NC}$@"
+		echo -e "${MAGENTA}Verbose: ${NC}$@"
 	fi
 }
 
