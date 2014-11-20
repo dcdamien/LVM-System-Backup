@@ -27,6 +27,10 @@ function log_error() {
 	>&2 echo -e "${RED}Error: ${NC}$@"
 }
 
+function log_warning() {
+	echo -e "${ORANGE}Warning: ${NC}$@"
+}
+
 # Abort if lockfile is found
 if [ -f $LOCKFILE ]; then
 	log_error "Backup is already running!"
