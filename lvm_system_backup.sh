@@ -16,7 +16,7 @@ MAGENTA='\e[95m'		# Verbose
 VERBOSE=0
 BACKUP_SAMBA=0
 
-# Define verbose function
+# Define log functions
 function log_verbose() {
 	if [[ $VERBOSE -eq 1 ]]; then
 		echo -e "${MAGENTA}Verbose: ${NC}$@"
