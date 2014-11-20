@@ -217,7 +217,7 @@ if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
         done
 fi
 
-# Modified code from the offical samba_backup script by Matthieu Patou
+# Modified code from the offical samba_backup script in source4/scripting/bin/samba_backup by Matthieu Patou
 function samba_backup {
 	for d in $SAMBA_DIRS;do
 	        relativedirname=`find . -type d -name "$d" -prune`
