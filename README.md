@@ -19,6 +19,8 @@ Option for disabling system backup
 
 log_functions
 
+Check if remote dir with todays date already exists
+
 License
 =================
 
