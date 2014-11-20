@@ -62,6 +62,7 @@ else
 	if [ -z $1 ]; then
 		log_error "${RED}Error: ${NC}Can't find the config file at default location"
 		log_error "${RED}Error: ${NC}Please specify one as first parameter"
+		exit 1
 	fi
 
 	if ! [ -f $1 ]; then
