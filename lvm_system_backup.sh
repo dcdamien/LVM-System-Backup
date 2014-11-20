@@ -32,17 +32,6 @@ if [ -f $LOCKFILE ]; then
 	exit 1
 fi
 
-# Check if lvdisplay is found
-log_verbose "${ORANGE}Verbose: ${NC}Checking if lvdisplay is installed"
-LVDISPLAY=`which lvdisplay`
-if [ -z $LVDISPLAY ]; then
-	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
-	log_error "${RED}Error: ${NC}Are you sure your system is using lvm?"
-	exit 1
-else
-	log_verbose "${ORANGE}Verbose: ${NC}lvdisplay found at $LVDISPLAY"
-fi
-
 # Look for config in /etc/default
 if [ -f /etc/default/lvm_system_backup_config ]; then
 	. /etc/default/lvm_system_backup_config
@@ -75,6 +64,17 @@ else
 	fi
 
 	log_verbose "${ORANGE}Verbose: ${NC}Couldn't find the config file neither at the default path nor as the first parameter"
+fi
+
+# Check if lvdisplay is found
+log_verbose "${ORANGE}Verbose: ${NC}Checking if lvdisplay is installed"
+LVDISPLAY=`which lvdisplay`
+if [ -z $LVDISPLAY ]; then
+	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
+	log_error "${RED}Error: ${NC}Are you sure your system is using lvm?"
+	exit 1
+else
+	log_verbose "${ORANGE}Verbose: ${NC}lvdisplay found at $LVDISPLAY"
 fi
 
 # Get hostname
