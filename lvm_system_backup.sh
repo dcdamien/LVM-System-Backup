@@ -22,7 +22,7 @@ function log_verbose() {
 }
 
 function log_error() {
-	echo -e "$@"
+	>&2 echo -e "$@"
 }
 
 # Abort if lockfile is found
@@ -398,8 +398,8 @@ function backup_boot {
 }
 
 # Checking server connection
-#log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
-#check_ssh
+log_verbose "${ORANGE}Verbose: ${NC}Checking if I can connect to $HOST"
+check_ssh
 
 # Create remote backup dir
 log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
