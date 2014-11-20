@@ -501,7 +501,7 @@ if [ $BACKUP_SAMBA == 1 ]; then
 	log_verbose "${ORANGE}Verbose: ${NC}Yep, i will create one"
 	samba_backup
 else
-	log_verbose "${ORANGE}Verbose: ${NC}No, BACKUP_SAMBA is set to $BACKUP_SAMBA""
+	log_verbose "${ORANGE}Verbose: ${NC}No, BACKUP_SAMBA is set to $BACKUP_SAMBA"
 fi
 
 # Create remote backup dir
