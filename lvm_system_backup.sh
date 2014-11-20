@@ -13,7 +13,6 @@ NC='\e[0m'
 ORANGE='\e[0;33m'
 GREEN='\e[0;32m'
 VERBOSE=0
-SAMBA_DIRS="private etc sysvol"
 
 # Define verbose function
 function log_verbose() {
@@ -211,45 +210,93 @@ if [ $? -ne 0 ]; then
 fi
 
 # Exclude logical volumes
-log_verbose "${ORANGE}Verbose: ${NC}Deleting all excluded logical volumes from the file $LVS"
-log_verbose "${ORANGE}Verbose: ${NC}Excluded volume/s is/are: ${LV_EXCLUDE[@]}"
-
+log_verbose "${ORANGE}Verbose: ${NC}Checking if there are excluded volumes defined"
 if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+	log_verbose "${ORANGE}Verbose: ${NC}Deleting all excluded logical volumes from the file $LVS"
+	log_verbose "${ORANGE}Verbose: ${NC}Excluded volume/s is/are: ${LV_EXCLUDE[@]}"
         COUNTER=0
         while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
                 sed -i "/${LV_EXCLUDE[$COUNTER]}/d" $LVS
                 let COUNTER=COUNTER+1
         done
+else
+	log_verbose "${ORANGE}Verbose: ${NC}No volumes to exclude!"
 fi
 
 # Modified code from the offical samba_backup script in source4/scripting/bin/samba_backup by Matthieu Patou
 function samba_backup {
-	for d in $SAMBA_DIRS;do
-	        relativedirname=`find . -type d -name "$d" -prune`
-	        n=`echo $d | sed 's/\//_/g'`
-	        if [ "$d" = "private" ]; then
-	                find $relativedirname -name "*.ldb.bak" -exec rm {} \;
-	                for ldb in `find $relativedirname -name "*.ldb"`; do
-	                        tdbbackup $ldb
-	                        if [ $? -ne 0 ]; then
-	                                log_error "${RED}Error: ${NC}Error while backuping $ldb"
-	                                exit 1
-	                        fi
-	                done
-	                tar cjf ${WHERE}/samba4_${n}.${WHEN}.tar.bz2  $relativedirname --exclude=*.ldb >/dev/null 2>&1
-	                if [ $? -ne 0 ]; then
-	                        log_error "${RED}Error: ${NC}Error while archiving ${WHERE}/samba4_${n}.${WHEN}.tar.bz2"
-	                        exit 1
-	                fi
-	                find $relativedirname -name "*.ldb.bak" -exec rm {} \;
-	        else
-	                tar cjf ${WHERE}/${n}.${WHEN}.tar.bz2  $relativedirname >/dev/null 2>&1
-	                if [ $? -ne 0 ]; then
-	                        log_error "${RED}Error: ${NC}Error while archiving ${WHERE}/${n}.${WHEN}.tar.bz2"
-	                        exit 1
-	                fi
-	        fi
-done
+	log_verbose "${ORANGE}Verbose: ${NC}Checking if tdbbackkup is there"
+	TDBBACKUP=`which tdbbackup`
+	if [ -z $TDBBACKUP ]; then
+		log_error "${RED}Error: ${NC}Cannot find tddbackup"
+		log_error "${RED}Error: ${NC}Please check if you installed samba correctly"
+		exit 1
+	else
+		log_verbose "${ORANGE}Verbose: ${NC}tdbbackup is at $TDBBACKUP"
+	fi
+	
+	if [ -d /tmp/samba ]; then
+		log_error "${RED}Error: ${NC}/tmp/samba folder already exists"
+		log_error "${RED}Error: ${NC}Please delete it and start the script again"
+	else
+		mkdir /tmp/samba
+	fi
+	
+	log_verbose "${ORANGE}Verbose: ${NC}Creating backup of samba files"
+	if ! [ ${#SAMBA_DIRS[@]} -eq 0 ]; then
+		COUNTER=0
+		while [ $COUNTER -lt ${#SAMBA_DIRS[@]} ]; do
+			if [[ ${SAMBA_DIRS[$COUNTER]} == *private* ]]; then
+				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
+				for ldb in ${SAMBA_DIRS[$COUNTER]}; do
+					tdbbackup $ldb
+					if [ $? -ne 0 ]; then
+						log_error "${RED}Error: ${NC}Could not backup $ldb"
+						exit 1
+					fi
+				done
+				
+				log_verbose "${ORANGE}Verbose: ${NC}Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
+				rsync -avzq --exclude *.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba &>/dev/null
+				if [ $? -ne 0 ]; then
+					log_error "${RED}Error: ${NC}Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
+					exitexit 1
+				fi
+				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
+			else
+				log_verbose "${ORANGE}Verbose: ${NC}Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
+				rsync -avzq ${SAMBA_DIRS[$COUNTER]} /tmp/samba &>/dev/null
+				if [ $? -ne 0 ]; then
+					log_error "${RED}Error: ${NC}Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
+					exit 1
+				fi
+			fi
+			
+			log_verbose "${ORANGE}Verbose: ${NC}Compressing /tmp/samba to /tmp/samba4.tar.gz"
+			tar czf /tmp/samba4.tar.gz /tmp/samba &>/dev/null
+			if [ $? -ne 0 ]; then
+				log_error "${RED}Error: ${NC}Couldn't compress /tmp/samba to /tmp/samba4.tar.gz"
+			fi
+				
+			log_verbose "${ORANGE}Verbose: ${NC}Sending /tmp/samba4.tar.gz to $HOST"
+			scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4_${datum}_$time.tar.gz &> /dev/null
+			if [ $? -ne 0 ]; then
+				log_error "${RED}Error: ${NC}Error while sending /tmp/samba4.tar.gz to $HOST"
+			fi
+			
+			log_verbose "${ORANGE}Verbose: ${NC}Removing /tmp/samba4.tar.gz"
+			if [ -f /tmp/samba4.tar.gz ]; then
+				rm /tmp/samba4.tar.gz &> /dev/null
+			fi
+			
+			log_verbose "${ORANGE}Verbose: ${NC}Removing /tmp/samba"
+			if [ -d /tmp/samba ]; then
+				rm -r /tmp/samba &> /dev/null
+			fi
+				
+			let COUNTER=COUNTER+1
+		done
+	fi
 }
 
 # Exit trap to delete the snapshots and the lockfile
@@ -268,6 +315,14 @@ function finish {
 
         if [ -f $LOCKFILE ]; then
 		rm $LOCKFILE
+	fi
+	
+	if [ -f /tmp/samba4.tar.gz ]; then
+		rm /tmp/samba4.tar.gz &> /dev/null
+	fi
+	
+	if [ -d /tmp/samba ]; then
+		rm -r /tmp/samba &> /dev/null
 	fi
 
 	log_verbose "${ORANGE}Verbose: ${NC}Done"
