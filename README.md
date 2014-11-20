@@ -11,6 +11,8 @@ Samba ADDC backup
 
 MySQL database dump
 
+Delete old backups
+
 License
 =================
 
