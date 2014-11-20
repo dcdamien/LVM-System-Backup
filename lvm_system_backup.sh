@@ -573,4 +573,4 @@ if ! [ -z $NAGIOS ]; then
 	fi
 fi
 
-echo -e "${GREEN}Backup successful!"
+log_success "Backup successful!"
