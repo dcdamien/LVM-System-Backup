@@ -490,6 +490,7 @@ function backup_boot {
 
         if [ $? -ne 0 ]; then
                 log_error "${RED}Error: ${NC}Couldn't create an image of the mbr"
+                exit 1
         fi
 
 }
