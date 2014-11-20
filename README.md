@@ -6,7 +6,9 @@ The script creates a live backup of every logical volume in a specific volume gr
 ToDo
 =================
 Create Wiki entry for complete system restore
+
 Samba ADDC backup
+
 MySQL database dump
 
 License
