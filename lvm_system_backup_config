@@ -51,4 +51,4 @@
 		# BACKUP_SAMBA=
 		
 		# Path to samba data on debian, change accordingly to your system
-		# declare -a SAMBA_DIRS= ('/etc/samba' '/var/lib/samba/private' '/var/lib/samba/sysvol')
+		declare -a SAMBA_DIRS= ('/etc/samba' '/var/lib/samba/private' '/var/lib/samba/sysvol')
