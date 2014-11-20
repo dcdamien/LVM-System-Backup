@@ -33,10 +33,13 @@ if [ -f $LOCKFILE ]; then
 fi
 
 # Check if lvdisplay is found
+log_verbose "${ORANGE}Verbose: ${NC}Checking if lvdisplay is installed"
 LVDISPLAY=`which lvdisplay`
-if ! [ -f $LVDISPLAY ]; then
+if [ -z $LVDISPLAY ]; then
 	log_error "${RED}Error: ${NC}Couldn't find lvdisplay"
 	log_error "${RED}Error: ${NC}Are you sure your system is using lvm?"
+else
+	log_verbose "${ORANGE}Verbose: ${NC}lvdisplay found at $LVDISPLAY"
 fi
 
 # Look for config in /etc/default
