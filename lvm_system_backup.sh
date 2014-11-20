@@ -247,7 +247,7 @@ function samba_backup {
 		COUNTER=0
 		while [ $COUNTER -lt ${#SAMBA_DIRS[@]} ]; do
 			if [[ ${SAMBA_DIRS[$COUNTER]} == *private* ]]; then
-				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
+				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak &>/dev/null
 				for ldb in ${SAMBA_DIRS[$COUNTER]}; do
 					tdbbackup $ldb/*.ldb
 					if [ $? -ne 0 ]; then
@@ -264,7 +264,7 @@ function samba_backup {
 				fi
 				
 				log_verbose "${ORANGE}Verbose: ${NC}Deleting ldb.bak files from ${SAMBA_DIRS[$COUNTER]}"
-				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak
+				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak &>/dev/null
 				if [ $? -ne 0 ]; then
 					log_error "${RED}Error: ${NC}Deletion of ldb.bak files in ${SAMBA_DIRS[$COUNTER]} failed"
 				fi
