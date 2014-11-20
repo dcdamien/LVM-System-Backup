@@ -249,7 +249,7 @@ function samba_backup {
 			if [[ ${SAMBA_DIRS[$COUNTER]} == *private* ]]; then
 				rm "${SAMBA_DIRS[$COUNTER]}/*.ldb.bak" &>/dev/null
 				for ldb in ${SAMBA_DIRS[$COUNTER]}; do
-					tdbbackup $ldb
+					tdbbackup $ldb/*.ldb
 					if [ $? -ne 0 ]; then
 						log_error "${RED}Error: ${NC}Could not backup $ldb"
 						exit 1
