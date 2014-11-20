@@ -495,9 +495,7 @@ check_ssh
 
 # Create remote backup dir
 log_verbose "${ORANGE}Verbose: ${NC}Creating remote dir $DIR to store the backups on $HOST"
-
 ssh ${USER}@$HOST mkdir -p $DIR &>/dev/null
-
 if [ $? -ne 0 ]; then
 	log_error "${RED}Error: ${NC}Couldn't create the remote dir $DIR to store the backups"
 	exit 1
@@ -516,7 +514,6 @@ backup_lvs
 
 # Remove lock file
 log_verbose "${ORANGE}Verbose: ${NC}Removing the lock file, if exists"
-
 if [ -f $LOCKFILE ]; then
 	rm $LOCKFILE
 fi
