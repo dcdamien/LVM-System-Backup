@@ -11,8 +11,6 @@ Create Wiki entry for samba restore
 
 Create Wiki entry for MySQL database restore
 
-Samba ADDC backup
-
 MySQL database dump
 
 Delete old backups
