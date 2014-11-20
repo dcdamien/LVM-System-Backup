@@ -15,8 +15,6 @@ MySQL database dump
 
 Delete old backups
 
-Add warnings
-
 Option for disabling system backup
 
 log_functions
