@@ -15,6 +15,8 @@ MySQL database dump
 
 Delete old backups
 
+Add warnings
+
 License
 =================
 
