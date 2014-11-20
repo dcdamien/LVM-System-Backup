@@ -262,7 +262,7 @@ function check_ssh {
 		if [ $TEST != 600 ]; then
 			log_verbose "${ORANGE}Verbose: ${NC}Your key permission is $TEST"
 			log_verbose "${ORANGE}Verbose: ${NC}Please set ~/.ssh/id_rsa permissions to 600"
-			log_verbose "${ORANGE}Verbose: ${NC}I will continue anyway!"
+			log_verbose "${ORANGE}Verbose: ${NC}I will continue anyway, but ssh won't connect without password!"
 		fi
 	fi
 }
