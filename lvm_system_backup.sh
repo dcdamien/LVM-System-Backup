@@ -418,7 +418,7 @@ function backup_layout {
 			exit 1
 		fi
 	else
-		log_error "Can't copy /tmp/part_table to $HOST. File doens't exist"
+		log_error "Can't copy /tmp/part_table to $HOST. File doesn't exist"
 		exit 1
 	fi
 
