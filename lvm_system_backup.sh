@@ -110,9 +110,9 @@ fi
 
 # Check common vars
 if [[ -z "$DIR" || -z "$HOST" || -z "$USER" ]]; then
-		log_error "Important vars are missing!"
-		log_error "Please check the config file!"
-		exit 1
+	log_error "Important vars are missing!"
+	log_error "Please check the config file!"
+	exit 1
 fi
 
 # Check BACKUP_BOOT
