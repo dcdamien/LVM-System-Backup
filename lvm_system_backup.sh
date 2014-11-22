@@ -237,7 +237,7 @@ function samba_backup {
 	VRSYNC=`which rsync`
 	if [ -z $VRSYNC ]; then
 		log_error "Cannot find rsync"
-		log_error "Please install rync"
+		log_error "Please install rsync"
 		exit 1
 	else
 		log_verbose "rsync is at $VRSYNC"
