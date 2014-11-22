@@ -342,7 +342,6 @@ function finish {
                         lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
 			if [ $? -ne 0 ]; then
 				log_error "Couldn't remove ${lv}_snap"
-				exit 1
 			fi
                 fi
         done < $LVS
