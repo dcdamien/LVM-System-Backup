@@ -371,22 +371,22 @@ function check_ssh {
 	fi
 	
 	if ! [ -d ~/.ssh ]; then
-		log_verbose "Can't find ~/.ssh directory. No public key authentication possible."
-		log_verbose "You need to setup public authentication with the server that will store your backups."
-		log_verbose "For testing purpose you can also manually type a password."
+		log_warning "Can't find ~/.ssh directory. No public key authentication possible."
+		log_warning "You need to setup public key authentication with the server that will store your backups."
+		log_warning "For testing purpose you can also manually type a password."
 	fi
 	
 	if ! [ -f ~/.ssh/id_rsa ]; then
-		log_verbose "Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
-		log_verbose "You need to setup public authentication with the server that will store your backups."
-		log_verbose "For testing purpose you can also manually type a password."
+		log_warning "Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
+		log_warning "You need to setup public key authentication with the server that will store your backups."
+		log_warning "For testing purpose you can also manually type a password."
 	elif [ -f ~/.ssh/id_rsa ]; then
 		log_verbose "Checking if key permissions is set to 600"
 		TEST=$(stat --format=%a ~/.ssh/id_rsa)
 		if [ $TEST != 600 ]; then
-			log_verbose "Your key permission is $TEST"
-			log_verbose "Please set ~/.ssh/id_rsa permissions to 600"
-			log_verbose "I will continue anyway, but ssh won't connect without password!"
+			log_warning "Your key permission is $TEST"
+			log_warning "Please set ~/.ssh/id_rsa permissions to 600"
+			log_warning "I will continue anyway, but ssh won't connect without password!"
 		fi
 	fi
 }
