@@ -386,7 +386,7 @@ function BACKUP_SAMBA {
 	log_verbose "Checking if tdbbackkup is there"
 	TDBBACKUP=`which tdbbackup`
 	if [ -z $TDBBACKUP ]; then
-		log_error "Cannot find tddbackup"
+		log_error "Cannot find tdbbackup"
 		log_error "Please check if you installed samba correctly"
 		exit 1
 	else
