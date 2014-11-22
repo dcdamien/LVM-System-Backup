@@ -329,6 +329,10 @@ function samba_backup {
 	fi
 }
 
+#function mysql_backup {
+#	
+#	}
+
 # Exit trap to delete the snapshots and the lockfile
 function finish {
 	log_verbose "Cleaning up..."
