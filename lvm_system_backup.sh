@@ -259,6 +259,7 @@ function samba_backup {
 	if [ -d /tmp/samba ]; then
 		log_error "/tmp/samba folder already exists"
 		log_error "Please delete it and start the script again"
+		exit 1
 	else
 		mkdir /tmp/samba
 	fi
