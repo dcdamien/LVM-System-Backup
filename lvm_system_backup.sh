@@ -290,6 +290,7 @@ function samba_backup {
 				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak &>/dev/null
 				if [ $? -ne 0 ]; then
 					log_error "Deletion of ldb.bak files in ${SAMBA_DIRS[$COUNTER]} failed"
+					exit 1
 				fi
 			else
 				log_verbose "Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
@@ -306,12 +307,14 @@ function samba_backup {
 		tar czf /tmp/samba4.tar.gz /tmp/samba &>/dev/null
 		if [ $? -ne 0 ]; then
 			log_error "Couldn't compress /tmp/samba to /tmp/samba4.tar.gz"
+			exit 1
 		fi
 				
 		log_verbose "Sending /tmp/samba4.tar.gz to $HOST"
 		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4.tar.gz &>/dev/null
 		if [ $? -ne 0 ]; then
 			log_error "Error while sending /tmp/samba4.tar.gz to $HOST"
+			exit 1
 		fi
 			
 		log_verbose "Removing /tmp/samba4.tar.gz"
