@@ -71,8 +71,6 @@ else
 		. $1
 		log_verbose "The location of the config file is in the first parameter. Location: $1"
 	fi
-
-	log_verbose "Couldn't find the config file neither at the default path nor as the first parameter"
 fi
 
 # Check if lvdisplay is found
