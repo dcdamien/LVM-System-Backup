@@ -8,13 +8,19 @@ start=`date +%s`
 LOCKFILE=/var/run/lvm_system_backup.lock
 NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
 LVS=/tmp/lvs
+MYSQL_DB=/tmp/mysql_db
 NC='\e[0m'			# Message
 RED='\e[0;31m'			# Error
 ORANGE='\e[0;33m'		# Warning
 GREEN='\e[0;32m'		# Success
 MAGENTA='\e[95m'		# Verbose
+BLUE='\e[34m'			# Message
 VERBOSE=0
+BACKUP_BOOT=0
+BACKUP_VG=0
 BACKUP_SAMBA=0
+BACKUP_MYSQL=0
+NAGIOS=0
 
 # Define log functions
 function log_verbose() {
@@ -33,6 +39,10 @@ function log_warning() {
 
 function log_success() {
 	echo -e "${GREEN}Success: ${NC}$@"
+}
+
+function log_message() {
+	echo -e "${BLUE}Message: ${NC}$@"
 }
 
 # Abort if lockfile is found
@@ -73,17 +83,8 @@ else
 	fi
 fi
 
-# Check if lvdisplay is found
-log_verbose "Checking if lvdisplay is installed"
-LVDISPLAY=`which lvdisplay`
-if [ -z $LVDISPLAY ]; then
-	log_error "Couldn't find lvdisplay"
-	log_error "Are you sure your system is using lvm?"
-	exit 1
-else
-	log_verbose "lvdisplay found at $LVDISPLAY"
-fi
-
+# Check if all vars from the config file are configured
+log_verbose "Checking if all needed vars are configured"
 # Get hostname
 if [ -z $hostname ]; then
 	if [ -f /etc/hostname ]; then
@@ -101,100 +102,108 @@ if [ -z $hostname ]; then
 	fi
 fi
 
-# Check if $BACKUP_BOOT var is set to 0/1
-log_verbose "Checking if the BACKUP_BOOT option is configured"
-
-if [ -z $BACKUP_BOOT ]; then
-	log_error "BACKUP_BOOT is not configured!"
-	log_error "Please check the config file!"
+log_verbose "Checking if there are backup features enabled"
+if [[ $BACKUP_BOOT == 0 && $BACKUP_VG == 0 && $BACKUP_SAMBA == 0 && $BACKUP_MYSQL == 0 ]]; then
+	log_error "You haven't configured any backup features!"
 	exit 1
 fi
 
-# Check if all vars from the config file are configured
-log_verbose "Checking if the BACKUP_BOOT option is enabled"
-
-if [ $BACKUP_BOOT == 1 ]; then
-	log_verbose "BACKUP_BOOT is enabled"
-	log_verbose "Checking if all necessary vars are configured"
-
-	if [[ -z "$VG_NAME" || -z "$DIR" || -z "$HOST" || -z "$USER" || -z "$DISK" || -z "$BOOT" ]]; then
+# Check common vars
+if [[ -z "$DIR" || -z "$HOST" || -z "$USER" ]]; then
 		log_error "Important vars are missing!"
 		log_error "Please check the config file!"
 		exit 1
-	fi
-else
-	log_verbose "BACKUP_BOOT is disabled"
-	log_verbose "Checking if all necessary vars are configured"
-
-	if [[ -z "$VG_NAME" || -z "$DIR" || -z "$HOST" || -z "$USER" ]]; then
-		log_error "Important vars are missing!"
-		log_error "Please check the config file!"
-		exit 1
-	fi
 fi
 
-# Check if the specified volume group is there
-log_verbose "Checking if the volume group $VG_NAME exists"
-
-if ! [ -d /dev/$VG_NAME ]; then
-	log_error "VG $VG_NAME not found!"
-	exit 1
-fi
-
-# Checks for the backup boot feature
+# Check BACKUP_BOOT
 if [ $BACKUP_BOOT == 1 ]; then
-	log_verbose "Checking if the disk $DISK exists"
-
-	if ! [ -b $DISK ]; then
-		log_error "Disk $DISK not found!"
+	if [[ -z $DISK || -z $BOOT ]]; then
+		log_error "The vars for the BACKUP_BOOT feature are invalid"
+		log_error "Please check them and come back"
 		exit 1
 	fi
-
-	log_verbose "Checking if the boot disk $BOOT exists"
-
-	if ! [ -b $BOOT ]; then
-		log_error "Boot Disk $BOOT not found!"
-		exit 1
-	fi
-
-	log_verbose "Checking if the boot disk $BOOT is mounted on /boot"
-
-	MOUNT=$(mount | grep /boot | grep -o $BOOT)
-
-	if [ -z $MOUNT ]; then
-		log_error "Boot disk $BOOT is not mounted on /boot"
+fi
+	
+# Check BACKUP_VG
+if [[ $BACKUP_VG == 1 ]]; then
+	if [[ -z $VG_NAME || -z $SIZE ]]; then
+		log_error "The vars for the BACKUP_VG feature are invalid"
+		log_error "Please check them and come back"
 		exit 1
 	fi
 fi
 
-# Check if there is enough free space in the specified volume group to create a snapshot
-log_verbose "Checking if there is enough free space in the VG $VG_NAME to create a $SIZE snapshot"
-
-SIZE_SNAPSHOT=$(echo $SIZE | sed -e 's/g//g' | sed -e 's/,/./g' | sed -e 's/G//g')
-SIZE_FREE=$(lvs /dev/$VG_NAME -o vg_free | tail -1 | tr -d ' ' | sed -e 's/g//g' | sed -e 's/,/./g')
-SIZE_OUT=$(bc <<< "${SIZE_FREE}-$SIZE_SNAPSHOT")
-CHECK_SIZE=$(echo $SIZE | grep -c -)
-SIZE_OUT=$(echo ${SIZE}G | sed -e 's/-//g')
-
-if ! [ $CHECK_SIZE == 0 ]; then
-	log_error "Not enough free space in VG $VG to create a snapshot"
-	log_error "Need at least $SIZE_OUT space more"
-	exit 1
+# Check BACKUP_SAMBA
+if [[ $BACKUP_SAMBA == 1 ]]; then
+	if [ ${#SAMBA_DIRS[@]} -eq 0 ]; then
+		log_error "The array SAMBA_DIRS has no fields"
+		log_error "This array must be configured with the paths to your samba data"
+		log_error "Please check it and come back"
+		exit 1
+	fi
 fi
 
-# Check if the excluded logical volumes are existing
-if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
-	log_verbose "Checking if excluded LVs are existing"
-
-	COUNTER=0
-	while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
-        	if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
-        	       log_error "Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
-        	       exit 1
-	     fi
-	       let COUNTER=COUNTER+1
-	done
+# Check BACKUP_MYSQL
+if [[ $BACKUP_MYSQL == 1 ]]; then
+	if [[ -z $MYSQL_USER || -z $MYSQL_PASSWORD ]]; then
+		log_error "The vars for the BACKUP_MYSQL feature are invalid"
+		log_error "Please check them and come back"
+		echo $MYSQL_USER
+		echo $MYSQL_PASSWORD
+		exit 1
+	fi
 fi
+
+# Checking enabled backup features
+log_message "Checking enabled features"
+log_verbose "Checking if the BACKUP_BOOT feature is enabled"
+if ! [ -z $BACKUP_BOOT ]; then
+	if [ $BACKUP_BOOT == 1 ]; then
+		log_message "BACKUP_BOOT feature is enabled"
+	else
+		log_message "BACKUP_BOOT feature is disabled"
+	fi
+fi
+
+log_verbose "Checking if the BACKUP_VG feature is enabled"
+if ! [ -z $BACKUP_VG ]; then
+	if [ $BACKUP_VG == 1 ]; then
+		log_message "BACKUP_VG feature is enabled"
+	else
+		log_message "BACKUP_VG feature is disabled"
+	fi
+fi
+
+log_verbose "Checking if the NAGIOS feature is enabled"
+if ! [ -z $NAGIOS ]; then
+	if [ $NAGIOS == 1 ]; then
+		log_message "NAGIOS feature is enabled"
+	else
+		log_message "NAGIOS feature is disabled"
+	fi
+fi
+
+log_verbose "Checking if the BACKUP_SAMBA feature is enabled"
+if ! [ -z $BACKUP_SAMBA ]; then
+	if [ $BACKUP_SAMBA == 1 ]; then
+		log_message "BACKUP_SAMBA feature is enabled"
+	else
+		log_message "BACKUP_SAMBA feature is disabled"
+	fi
+fi
+
+log_verbose "Checking if the BACKUP_MYSQL feature is enabled"
+if ! [ -z $BACKUP_MYSQL ]; then
+	if [ $BACKUP_MYSQL == 1 ]; then
+		log_message "BACKUP_MYSQL feature is enabled"
+	else
+		log_message "BACKUP_MYSQL feature is disabled"
+	fi
+fi
+
+# Create lock file
+log_verbose "Creating lock file. Things are getting pretty serious"
+touch $LOCKFILE
 
 # Create dir var with subfolders
 datum=`date +%m/%d/%y`
@@ -202,37 +211,167 @@ DIR_DATE=`date +%m-%d-%y`
 time=`date +"%T"`
 DIR=$DIR/$hostname/$DIR_DATE
 
-# Create lock file
-log_verbose "Creating lock file. Things are getting pretty serious"
+function BACKUP_BOOT {
+	# Checks for the backup boot feature
+	if [ $BACKUP_BOOT == 1 ]; then
+		log_verbose "Checking if the disk $DISK exists"
 
-touch $LOCKFILE
+		if ! [ -b $DISK ]; then
+			log_error "Disk $DISK not found!"
+			exit 1
+		fi
 
-# Create list with logical volumes
-log_verbose "Creating list $LVS with all logical volumes in VG $VG_NAME"
+		log_verbose "Checking if the boot disk $BOOT exists"
 
-lvdisplay $VG_NAME | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
+		if ! [ -b $BOOT ]; then
+			log_error "Boot Disk $BOOT not found!"
+			exit 1
+		fi
 
-if [ $? -ne 0 ]; then
-	log_error "Couldn't create the list with logical volumes"
-	exit 1
-fi
+		log_verbose "Checking if the boot disk $BOOT is mounted on /boot"
 
-# Exclude logical volumes
-log_verbose "Checking if there are excluded volumes defined"
-if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
-	log_verbose "Deleting all excluded logical volumes from the file $LVS"
-	log_verbose "Excluded volume/s is/are: ${LV_EXCLUDE[@]}"
-        COUNTER=0
-        while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
-                sed -i "/${LV_EXCLUDE[$COUNTER]}/d" $LVS
-                let COUNTER=COUNTER+1
-        done
-else
-	log_verbose "No volumes to exclude!"
-fi
+		MOUNT=$(mount | grep /boot | grep -o $BOOT)
+
+		if [ -z $MOUNT ]; then
+			log_error "Boot disk $BOOT is not mounted on /boot"
+			exit 1
+		fi
+	fi
+	
+	# Wrapper to silence output
+	function copy_boot {
+		dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/boot.img.gz
+	}
+
+	function copy_mbr {
+		dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/mbr.img.gz
+	}
+
+	# Create image of /boot
+    log_verbose "Copy $BOOT to $HOST via dd"
+	copy_boot &> /dev/null
+
+    if [ $? -ne 0 ]; then
+		log_error "Couldn't copy the boot disk $BOOT to $HOST"
+        exit 1
+    fi
+
+    # Create image of mbr with grub
+    log_verbose "Create a 512 byte image of the mbr"
+	copy_mbr &> /dev/null
+
+    if [ $? -ne 0 ]; then
+        log_error "Couldn't create an image of the mbr"
+        exit 1
+    fi
+}
+
+function BACKUP_VG {
+	# Check if lvdisplay is found
+	log_verbose "Checking if lvdisplay is installed"
+	LVDISPLAY=`which lvdisplay`
+	if [ -z $LVDISPLAY ]; then
+		log_error "Couldn't find lvdisplay"
+		log_error "Are you sure your system is using lvm?"
+		exit 1
+	else
+		log_verbose "lvdisplay found at $LVDISPLAY"
+	fi
+
+	# Check if the specified volume group is there
+	log_verbose "Checking if the volume group $VG_NAME exists"
+
+	if ! [ -d /dev/$VG_NAME ]; then
+		log_error "VG $VG_NAME not found!"
+		exit 1
+	fi
+	# Check if there is enough free space in the specified volume group to create a snapshot
+	log_verbose "Checking if there is enough free space in the VG $VG_NAME to create a $SIZE snapshot"
+
+	SIZE_SNAPSHOT=$(echo $SIZE | sed -e 's/g//g' | sed -e 's/,/./g' | sed -e 's/G//g')
+	SIZE_FREE=$(lvs /dev/$VG_NAME -o vg_free | tail -1 | tr -d ' ' | sed -e 's/g//g' | sed -e 's/,/./g')
+	SIZE_OUT=$(bc <<< "${SIZE_FREE}-$SIZE_SNAPSHOT")
+	CHECK_SIZE=$(echo $SIZE | grep -c -)
+	SIZE_OUT=$(echo ${SIZE}G | sed -e 's/-//g')
+
+	if ! [ $CHECK_SIZE == 0 ]; then
+		log_error "Not enough free space in VG $VG to create a snapshot"
+		log_error "Need at least $SIZE_OUT space more"
+		exit 1
+	fi
+
+	# Check if the excluded logical volumes are existing
+	if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+		log_verbose "Checking if excluded LVs are existing"
+
+		COUNTER=0
+		while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
+				if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
+					   log_warning "Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
+			fi
+			let COUNTER=COUNTER+1
+		done
+	fi
+	
+	# Create list with logical volumes
+	log_verbose "Creating list $LVS with all logical volumes in VG $VG_NAME"
+
+	lvdisplay $VG_NAME | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
+
+	if [ $? -ne 0 ]; then
+		log_error "Couldn't create the list with logical volumes"
+		exit 1
+	fi
+	
+	# Exclude logical volumes
+	log_verbose "Checking if there are excluded volumes defined"
+	if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+		log_verbose "Deleting all excluded logical volumes from the file $LVS"
+		log_verbose "Excluded volume/s is/are: ${LV_EXCLUDE[@]}"
+			COUNTER=0
+			while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
+					sed -i "/${LV_EXCLUDE[$COUNTER]}/d" $LVS
+					let COUNTER=COUNTER+1
+			done
+	else
+		log_verbose "No volumes to exclude!"
+	fi
+	
+		# Create a snapshot of every volume and copy it using dd
+	log_verbose "Starting loop for every volume in $LVS"
+
+	while read lv; do
+		# Wrapper to silence output
+		function copy_lv {
+			dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/${lv}.img.gz
+		}
+
+		log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
+		lvcreate --snapshot -L $SIZE -n ${lv}_snap /dev/$VG_NAME/$lv &> /dev/null
+
+		if [ $? -ne 0 ]; then
+			log_error "Couldn't create a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
+			exit 1
+		fi
+		log_verbose "Copy the compressed volume ${lv} via dd to $HOST"
+		copy_lv &> /dev/null
+
+		if [ $? -ne 0 ]; then
+			log_error "Couldn't copy the compressed volume ${lv} to $HOST"
+			exit 1
+		fi
+		log_verbose "Removing the snapshot ${lv}_snap"
+		lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
+
+		if [ $? -ne 0 ]; then
+			log_error "Couldn't delete the snapshot named ${lv}_snap of lv ${lv}"
+			exit 1
+		fi
+	done < $LVS
+}
 
 # Modified code from the offical samba_backup script in source4/scripting/bin/samba_backup by Matthieu Patou
-function samba_backup {
+function BACKUP_SAMBA {
 	log_verbose "Checking if rsync is installed"
 	VRSYNC=`which rsync`
 	if [ -z $VRSYNC ]; then
@@ -327,39 +466,72 @@ function samba_backup {
 	fi
 }
 
-#function mysql_backup {
-#	
-#	}
+function BACKUP_MYSQL {
+	# Wrapper to silence output
+	function dump {
+		$MYSQLDUMP -u$MYSQL_USER -p"$MYSQL_PASSWORD" --complete-insert "$db" > /tmp/"$db".sql
+	}
 
-# Exit trap to delete the snapshots and the lockfile
-function finish {
-	log_verbose "Cleaning up..."
+	# Check if mysql dump is installed
+	MYSQLDUMP=`which mysqldump`
+	if [ -z $MYSQLDUMP ]; then
+		log_error "Cannot find mysqldump!"
+	else
+		log_verbose "MySQLDump was found at $MYSQLDUMP"
+	fi
 
-        while read lv; do
-                if [ -e /dev/$VG_NAME/${lv}_snap ]; then
-                        lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
-			if [ $? -ne 0 ]; then
-				log_error "Couldn't remove ${lv}_snap"
-			fi
-                fi
-        done < $LVS
+	log_verbose "Creating file /tmp/mysql_db with all databases"
+	mysql -u$MYSQL_USER -p"$MYSQL_PASSWORD" -Bse 'show databases' > $MYSQL_DB
 
-        if [ -f $LOCKFILE ]; then
-		rm $LOCKFILE
+	if ! [ ${#MYSQL_EXCLUDE[@]} -eq 0 ]; then
+		log_verbose "Removing excluded databases from /tmp/mysql_db"
+		log_verbose "Excluded database/s is/are: ${MYSQL_EXCLUDE[@]}"
+
+		COUNTER=0
+		while [ $COUNTER -lt ${#MYSQL_EXCLUDE[@]} ]; do
+			sed -i "/${MYSQL_EXCLUDE[$COUNTER]}/d" $MYSQL_DB
+			let COUNTER=COUNTER+1
+		done
+	else
+		log_verbose "No databases to exclude"
 	fi
-	
-	if [ -f /tmp/samba4.tar.gz ]; then
-		rm /tmp/samba4.tar.gz &> /dev/null
+
+	while read db; do
+		log_verbose "Creating backup of database $db"
+		dump &>/dev/null
+		if [ $? -ne 0 ]; then
+			log_warning "Cannot backup $db"
+			log_warning "I will continue anyway"
+			log_warning "But you should check what went wrong"
+		fi
+	done < $MYSQL_DB
+
+	log_verbose "Creating tar archive from *.sql in /tmp"
+	tar cpzf /tmp/mysql_databases.tar.gz /tmp/*.sql &>/dev/null
+	if [ $? -ne 0 ]; then
+		log_error "tar exit value was $?"
+		log_error "Cannot compress the databases"
+		log_error "Not sure what went wrong"
+		exit 1
 	fi
-	
-	if [ -d /tmp/samba ]; then
-		rm -r /tmp/samba &> /dev/null
+
+	log_verbose "Sending databases to $HOST"
+	scp /tmp/mysql_databases.tar.gz ${USER}@$HOST:$DIR/mysql_databases.tar.gz &> /dev/null
+	if [ $? -ne 0 ]; then
+		log_error "Cannot login or connect to $HOST"
+		exit 1
 	fi
-	log_verbose "Done"
+
+	log_verbose "Deleting mysql_databases.tar.gz in /tmp"
+	if [ -f /tmp/mysql_databases.tar.gz ]; then
+		rm /tmp/mysql_databases.tar.gz
+	else
+		log_warning "/tmp/mysql_databases.tar.gz does not exist"
+		log_warning "Maybe the backup wasn't created?"
+	fi
 }
-trap finish EXIT
 
-function check_ssh {
+function CHECK_SSH {
 	nc -z -w5 $HOST 22 &> /dev/null
 	
 	if [ $? -ne 0 ]; then
@@ -378,7 +550,7 @@ function check_ssh {
 		log_warning "You need to setup public key authentication with the server that will store your backups."
 		log_warning "For testing purpose you can also manually type a password."
 	elif [ -f ~/.ssh/id_rsa ]; then
-		log_verbose "Checking if key permissions is set to 600"
+		log_verbose "Checking if key permissions are set to 600"
 		TEST=$(stat --format=%a ~/.ssh/id_rsa)
 		if [ $TEST != 600 ]; then
 			log_warning "Your key permission is $TEST"
@@ -388,7 +560,7 @@ function check_ssh {
 	fi
 }
 
-function backup_layout {
+function BACKUP_LAYOUT {
 	# Backup partition table
 	log_verbose "Backing up partiton table to /tmp/part_table"
 
@@ -455,74 +627,37 @@ function backup_layout {
 	rm /tmp/lvm_structure
 }
 
-function backup_lvs {
-	# Create a snapshot of every volume and copy it using dd
-	log_verbose "Starting loop for every volume in $LVS"
+# Exit trap to delete the snapshots and the lockfile
+function FINISH {
+	log_verbose "Cleaning up..."
 
-	while read lv; do
-		# Wrapper to silence output
-		function copy_lv {
-			dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/${lv}.img.gz
-		}
+        while read lv; do
+                if [ -e /dev/$VG_NAME/${lv}_snap ]; then
+                        lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
+			if [ $? -ne 0 ]; then
+				log_error "Couldn't remove ${lv}_snap"
+			fi
+                fi
+        done < $LVS
 
-		log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
-		lvcreate --snapshot -L $SIZE -n ${lv}_snap /dev/$VG_NAME/$lv &> /dev/null
-
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't create a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
-			exit 1
-		fi
-		log_verbose "Copy the compressed volume ${lv} via dd to $HOST"
-		copy_lv &> /dev/null
-
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't copy the compressed volume ${lv} to $HOST"
-			exit 1
-		fi
-		log_verbose "Removing the snapshot ${lv}_snap"
-		lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
-
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't delete the snapshot named ${lv}_snap of lv ${lv}"
-			exit 1
-		fi
-	done < $LVS
+        if [ -f $LOCKFILE ]; then
+		rm $LOCKFILE
+	fi
+	
+	if [ -f /tmp/samba4.tar.gz ]; then
+		rm /tmp/samba4.tar.gz &> /dev/null
+	fi
+	
+	if [ -d /tmp/samba ]; then
+		rm -r /tmp/samba &> /dev/null
+	fi
+	log_verbose "Done"
 }
-
-
-function backup_boot {
-	# Wrapper to silence output
-	function copy_boot {
-		dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/boot.img.gz
-	}
-
-	function copy_mbr {
-		dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/mbr.img.gz
-	}
-
-	# Create image of /boot
-        log_verbose "Copy $BOOT to $HOST via dd"
-	copy_boot &> /dev/null
-
-        if [ $? -ne 0 ]; then
-                log_error "Couldn't copy the boot disk $BOOT to $HOST"
-                exit 1
-        fi
-
-        # Create image of mbr with grub
-        log_verbose "Create a 512 byte image of the mbr"
-	copy_mbr &> /dev/null
-
-        if [ $? -ne 0 ]; then
-                log_error "Couldn't create an image of the mbr"
-                exit 1
-        fi
-
-}
+trap FINISH EXIT
 
 # Checking server connection
 log_verbose "Checking if I can connect to $HOST"
-check_ssh
+CHECK_SSH
 
 # Create remote backup dir
 log_verbose "Creating remote dir $DIR to store the backups on $HOST"
@@ -532,26 +667,29 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-# Create samba backup
-log_verbose "Checking if i should create a samba backup"
-if [ $BACKUP_SAMBA == 1 ]; then
-	log_verbose "BACKUP_SAMBA is set to $BACKUP_SAMBA. Backup will be created"
-	samba_backup
-else
-	log_verbose "BACKUP_SAMBA is set to $BACKUP_SAMBA. No backup will be created"
-fi
-
-
-# Backup lvm and mbr layout
-log_verbose "Starting the backups of lvm and mbr layout..."
-backup_layout
-
 if [ $BACKUP_BOOT == 1 ]; then
-	backup_boot
+	log_verbose "Starting BACKUP_BOOT"
+	BACKUP_BOOT
 fi
 
-# Backup the logical volumes
-backup_lvs
+if [ $BACKUP_VG == 1 ]; then
+	log_verbose "Starting BACKUP_VG"
+	BACKUP_VG
+fi
+
+if [ $BACKUP_SAMBA == 1 ]; then
+	log_verbose "Starting BACKUP_SAMBA"
+	BACKUP_SAMBA
+fi
+
+if [ $BACKUP_MYSQL == 1 ]; then
+	log_verbose "Starting BACKUP_MYSQL"
+	BACKUP_MYSQL
+fi
+
+if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
+	BACKUP_LAYOUT
+fi
 
 # Remove lock file
 log_verbose "Removing the lock file, if exists"
@@ -564,18 +702,16 @@ end=`date +%s`
 log_verbose "Execution took $((end-start)) seconds"
 
 # Write nagios log
-if ! [ -z $NAGIOS ]; then
-	if [ $NAGIOS == 1 ]; then
-		log_verbose "Creating log file for nagios plugin"
+if [ $NAGIOS == 1 ]; then
+	log_verbose "Creating log file for nagios plugin"
 
-		if [ -f $NAGIOS_LOG ]; then
-			rm $NAGIOS_LOG
-		fi
-		echo "$hostname" >> $NAGIOS_LOG
-		echo "$datum" >> $NAGIOS_LOG
-		echo "$time" >> $NAGIOS_LOG
-		echo "successful" >> $NAGIOS_LOG
+	if [ -f $NAGIOS_LOG ]; then
+		rm $NAGIOS_LOG
 	fi
+	echo "$hostname" >> $NAGIOS_LOG
+	echo "$datum" >> $NAGIOS_LOG
+	echo "$time" >> $NAGIOS_LOG
+	echo "successful" >> $NAGIOS_LOG
 fi
 
 log_success "Backup successful!"
