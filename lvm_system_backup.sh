@@ -114,8 +114,8 @@ fi
 log_verbose "Checking if the BACKUP_BOOT option is enabled"
 
 if [ $BACKUP_BOOT == 1 ]; then
-		log_verbose "BACKUP_BOOT is enabled"
-		log_verbose "Checking if all necessary vars are configured"
+	log_verbose "BACKUP_BOOT is enabled"
+	log_verbose "Checking if all necessary vars are configured"
 
 	if [[ -z "$VG_NAME" || -z "$DIR" || -z "$HOST" || -z "$USER" || -z "$DISK" || -z "$BOOT" ]]; then
 		log_error "Important vars are missing!"
