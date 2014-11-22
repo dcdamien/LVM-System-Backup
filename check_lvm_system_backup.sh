@@ -36,9 +36,9 @@ DATE_LOG_SEC=$(date +%m/%d/%y -d "$DATE_LOG + $MAX_OLD day")
 DATE_LOG_SEC=$(date -d $DATE_LOG_SEC '+%s')
 
 if [ $TODAY -ge $DATE_LOG_SEC ]; then
-	echo "Critical - LVM system backup is from $DATE_LOG"
+	echo "Critical - Backup is from $DATE_LOG"
 	exit 2
 else
-	echo "OK - LVM system backup is from $DATE_LOG"
+	echo "OK - Backup is from $DATE_LOG"
 	exit 0
 fi
