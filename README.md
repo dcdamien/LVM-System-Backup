@@ -11,8 +11,6 @@ Create Wiki entry for samba restore
 
 Create Wiki entry for MySQL database restore
 
-Delete old backups
-
 Check if remote dir with todays date already exists
 
 License
