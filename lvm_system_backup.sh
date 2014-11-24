@@ -711,23 +711,27 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ $BACKUP_BOOT == 1 ]; then
-	log_verbose "Starting BACKUP_BOOT"
+	log_message "Starting BACKUP_BOOT"
 	BACKUP_BOOT
+	log_message "BACKUP_BOOT is done"
 fi
 
 if [ $BACKUP_VG == 1 ]; then
-	log_verbose "Starting BACKUP_VG"
+	log_message "Starting BACKUP_VG"
 	BACKUP_VG
+	log_message "BACKUP_VG is done"
 fi
 
 if [ $BACKUP_SAMBA == 1 ]; then
-	log_verbose "Starting BACKUP_SAMBA"
+	log_message "Starting BACKUP_SAMBA"
 	BACKUP_SAMBA
+	log_message "BACKUP_SAMBA is done"
 fi
 
 if [ $BACKUP_MYSQL == 1 ]; then
-	log_verbose "Starting BACKUP_MYSQL"
+	log_message "Starting BACKUP_MYSQL"
 	BACKUP_MYSQL
+	log_message "BACKUP_MYSQL is done"
 fi
 
 if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
