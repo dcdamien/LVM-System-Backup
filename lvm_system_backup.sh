@@ -22,6 +22,7 @@ BACKUP_SAMBA=0
 BACKUP_MYSQL=0
 NAGIOS=0
 DELETE_OLD_DATA=0
+IGNORE_REMOTE_DIR=0
 
 # Define log functions
 function log_verbose() {
@@ -225,7 +226,7 @@ touch $LOCKFILE
 datum=`date +%m/%d/%y`
 DIR_DATE=`date +%m-%d-%y`
 time=`date +"%T"`
-DIR=$DIR/$hostname/$DIR_DATE
+DIR_FULL=$DIR/$hostname/$DIR_DATE
 
 function BACKUP_BOOT {
 	# Checks for the backup boot feature
@@ -256,30 +257,30 @@ function BACKUP_BOOT {
 	
 	# Wrapper to silence output
 	function copy_boot {
-		dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/boot.img.gz
+		dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/boot.img.gz
 	}
 
 	function copy_mbr {
-		dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/mbr.img.gz
+		dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/mbr.img.gz
 	}
 
 	# Create image of /boot
-    log_verbose "Copy $BOOT to $HOST via dd"
+    	log_verbose "Copy $BOOT to $HOST via dd"
 	copy_boot &> /dev/null
 
-    if [ $? -ne 0 ]; then
+    	if [ $? -ne 0 ]; then
 		log_error "Couldn't copy the boot disk $BOOT to $HOST"
-        exit 1
-    fi
+        	exit 1
+    	fi
 
-    # Create image of mbr with grub
-    log_verbose "Create a 512 byte image of the mbr"
+    	# Create image of mbr with grub
+    	log_verbose "Create a 512 byte image of the mbr"
 	copy_mbr &> /dev/null
 
-    if [ $? -ne 0 ]; then
-        log_error "Couldn't create an image of the mbr"
-        exit 1
-    fi
+    	if [ $? -ne 0 ]; then
+        	log_error "Couldn't create an image of the mbr"
+        	exit 1
+    	fi
 }
 
 function BACKUP_VG {
@@ -359,7 +360,7 @@ function BACKUP_VG {
 	while read lv; do
 		# Wrapper to silence output
 		function copy_lv {
-			dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR/${lv}.img.gz
+			dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${lv}.img.gz
 		}
 
 		log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
@@ -464,7 +465,7 @@ function BACKUP_SAMBA {
 		fi
 				
 		log_verbose "Sending /tmp/samba4.tar.gz to $HOST"
-		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR/samba4.tar.gz &>/dev/null
+		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR_FULL/samba4.tar.gz &>/dev/null
 		if [ $? -ne 0 ]; then
 			log_error "Error while sending /tmp/samba4.tar.gz to $HOST"
 			exit 1
@@ -532,7 +533,7 @@ function BACKUP_MYSQL {
 	fi
 
 	log_verbose "Sending databases to $HOST"
-	scp /tmp/mysql_databases.tar.gz ${USER}@$HOST:$DIR/mysql_databases.tar.gz &> /dev/null
+	scp /tmp/mysql_databases.tar.gz ${USER}@$HOST:$DIR_FULL/mysql_databases.tar.gz &> /dev/null
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
 		exit 1
@@ -596,10 +597,10 @@ function BACKUP_LAYOUT {
 
 	sfdisk --quiet -d $DISK > /tmp/part_table
 
-	log_verbose "Sending partition table backup to $HOST:$DIR"
+	log_verbose "Sending partition table backup to $HOST:$DIR_FULL"
 
 	if [ -f /tmp/part_table ]; then
-		scp /tmp/part_table $USER@$HOST:$DIR/part_table &> /dev/null
+		scp /tmp/part_table $USER@$HOST:$DIR_FULL/part_table &> /dev/null
 
 		if [ $? -ne 0 ]; then
 			log_error "Cannot login or connect to $HOST"
@@ -624,10 +625,10 @@ function BACKUP_LAYOUT {
 		exit 1
 	fi
 
-	log_verbose "Sending lvm structure to $HOST:$DIR"
+	log_verbose "Sending lvm structure to $HOST:$DIR_FULL"
 
 	if [ -f /tmp/lvm_structure ]; then
-		scp /tmp/lvm_structure ${USER}@$HOST:$DIR/lvm_structure &> /dev/null
+		scp /tmp/lvm_structure ${USER}@$HOST:$DIR_FULL/lvm_structure &> /dev/null
 
 		if [ $? -ne 0 ]; then
 			log_error "Cannot login or connect to $HOST"
@@ -684,11 +685,21 @@ trap FINISH EXIT
 log_verbose "Checking if I can connect to $HOST"
 CHECK_SSH
 
+# Check if remote dir already exists
+if (ssh ${USER}@$HOST '[ -d $DIR_FULL ]'); then
+	if ! [ $IGNORE_REMOTE_DIR == 1 ]; then
+		log_error "$DIR_FULL on host $HOST already exists"
+		log_error "Maybe todays backup was already created?"
+		log_error "Set IGNORE_REMOTE_DIR to 1 in the config file if you want to continue anyway!"
+		exit 1
+	fi
+fi
+
 # Create remote backup dir
-log_verbose "Creating remote dir $DIR to store the backups on $HOST"
-ssh ${USER}@$HOST mkdir -p $DIR &>/dev/null
+log_verbose "Creating remote dir $DIR_FULL to store the backups on $HOST"
+ssh ${USER}@$HOST mkdir -p $DIR_FULL &>/dev/null
 if [ $? -ne 0 ]; then
-	log_error "Couldn't create the remote dir $DIR to store the backups"
+	log_error "Couldn't create the remote dir $DIR_FULL to store the backups"
 	exit 1
 fi
 
