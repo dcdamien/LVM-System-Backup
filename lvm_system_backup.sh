@@ -688,7 +688,7 @@ CHECK_SSH
 # Check if remote dir already exists
 log_verbose "Checking if $DIR_FULL already exists on $HOST"
 if (ssh ${USER}@$HOST '[ -d $DIR_FULL ]'); then
-	log_verbose "Remote dir $DIR_FULL exists on $HOST"
+	log_warning "Remote dir $DIR_FULL exists on $HOST"
 	log_verbose "Checking IGNORE_REMOTE_DIR"
 	if ! [ $IGNORE_REMOTE_DIR == 1 ]; then
 		log_verbose "IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
@@ -697,8 +697,8 @@ if (ssh ${USER}@$HOST '[ -d $DIR_FULL ]'); then
 		log_error "Set IGNORE_REMOTE_DIR to 1 in the config file if you want to continue anyway!"
 		exit 1
 	else
-		log_verbose "Remote dir exists but IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
-		log_verbose "I will continue anyway!"
+		log_warning "Remote dir exists but IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
+		log_warning "I will continue anyway!"
 	fi
 fi
 
