@@ -21,6 +21,7 @@ BACKUP_VG=0
 BACKUP_SAMBA=0
 BACKUP_MYSQL=0
 NAGIOS=0
+DELETE_OLD_DATA=0
 
 # Define log functions
 function log_verbose() {
