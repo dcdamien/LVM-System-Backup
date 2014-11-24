@@ -13,6 +13,8 @@ Create Wiki entry for MySQL database restore
 
 Option to send backup to local dir
 
+Support for system backup on gpt partitions
+
 License
 =================
 
