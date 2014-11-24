@@ -689,8 +689,9 @@ CHECK_SSH
 log_verbose "Checking if $DIR_FULL already exists on $HOST"
 if (ssh ${USER}@$HOST '[ -d $DIR_FULL ]'); then
 	log_verbose "Remote dir $DIR_FULL exists on $HOST"
-	log_verbose "Checking IGNORE_REMOTE_DIR var"
+	log_verbose "Checking IGNORE_REMOTE_DIR"
 	if ! [ $IGNORE_REMOTE_DIR == 1 ]; then
+		log_verbose "IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
 		log_error "$DIR_FULL on host $HOST already exists"
 		log_error "Maybe todays backup was already created?"
 		log_error "Set IGNORE_REMOTE_DIR to 1 in the config file if you want to continue anyway!"
