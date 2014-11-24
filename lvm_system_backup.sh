@@ -629,7 +629,7 @@ function BACKUP_LAYOUT {
 
 function DELETE_OLD_DATA {
 	log_verbose "Deleting backups older than $DAYS_OLD in $DIR/$hostname on host $HOST"
-	ssh ${USER}@$HOST find $DIR/$hostname -mindepth 1 -maxdepth 3 --type d mtime +$DAYS_OLD -exec rm -rf {} \;
+	ssh ${USER}@$HOST find $DIR/$hostname -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
 	exit 1
