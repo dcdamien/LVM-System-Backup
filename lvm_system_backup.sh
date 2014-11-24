@@ -739,7 +739,9 @@ if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
 fi
 
 if [ $DELETE_OLD_DATA == 1 ]; then
+	log_message "Deleting data older than $DAYS_OLD"
 	DELETE_OLD_DATA
+	log_message "DELETE_OLD_DATA is done"
 fi
 
 # Remove lock file
