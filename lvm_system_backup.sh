@@ -627,6 +627,14 @@ function BACKUP_LAYOUT {
 	rm /tmp/lvm_structure
 }
 
+function DELETE_OLD_DATA {
+	log_verbose "Deleting backups older than $DAYS_OLD in $DIR/$hostname on host $HOST"
+	ssh ${USER}@$HOST find $DIR/$hostname -mindepth 1 -maxdepth 3 --type d mtime +$DAYS_OLD -exec rm -rf {} \;
+	if [ $? -ne 0 ]; then
+		log_error "Cannot login or connect to $HOST"
+	exit 1
+}
+
 # Exit trap to delete the snapshots and the lockfile
 function FINISH {
 	log_verbose "Cleaning up..."
@@ -689,6 +697,10 @@ fi
 
 if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
 	BACKUP_LAYOUT
+fi
+
+if [ $DELETE_OLD_DATA == 1 ];then
+	DELETE_OLD_DATA
 fi
 
 # Remove lock file
