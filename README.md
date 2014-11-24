@@ -11,6 +11,8 @@ Create Wiki entry for samba restore
 
 Create Wiki entry for MySQL database restore
 
+Option to send backup to local dir
+
 License
 =================
 
