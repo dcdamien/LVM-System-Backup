@@ -697,7 +697,7 @@ if (ssh ${USER}@$HOST '[ -d $DIR_FULL ]'); then
 		log_error "Set IGNORE_REMOTE_DIR to 1 in the config file if you want to continue anyway!"
 		exit 1
 	else
-		log_warning "Remote dir exists but IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
+		log_warning "IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
 		log_warning "I will continue anyway!"
 	fi
 fi
