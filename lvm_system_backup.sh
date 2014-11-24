@@ -648,7 +648,8 @@ function DELETE_OLD_DATA {
 	ssh ${USER}@$HOST find $DIR/$hostname -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
-	exit 1
+		exit 1
+	fi
 }
 
 # Exit trap to delete the snapshots and the lockfile
