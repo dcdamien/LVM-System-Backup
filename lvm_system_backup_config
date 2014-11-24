@@ -68,3 +68,10 @@
 
                 # MySQL backup user password
                 # MYSQL_PASSWORD=
+                
+        # Delete old backups   
+                # Delete old backups on $HOST?
+                # DELETE_OLD_DATA=
+                
+                # Every folder, which is older than $DAYS_OLD in $DIRS/$hostname on the remote host will be deleted.
+                # DAYS_OLD=
