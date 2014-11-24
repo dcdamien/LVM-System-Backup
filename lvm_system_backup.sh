@@ -149,8 +149,14 @@ if [[ $BACKUP_MYSQL == 1 ]]; then
 	if [[ -z $MYSQL_USER || -z $MYSQL_PASSWORD ]]; then
 		log_error "The vars for the BACKUP_MYSQL feature are invalid"
 		log_error "Please check them and come back"
-		echo $MYSQL_USER
-		echo $MYSQL_PASSWORD
+		exit 1
+	fi
+fi
+
+if [ $DELETE_OLD_DATA == 1 ]; then
+	if [ -z $DAYS_OLD ]; then
+		log_error "The vars for the DELETE_OLD_DATA feature are invalid"
+		log_error "Please check them and come back"
 		exit 1
 	fi
 fi
@@ -199,6 +205,15 @@ if ! [ -z $BACKUP_MYSQL ]; then
 		log_message "BACKUP_MYSQL feature is enabled"
 	else
 		log_message "BACKUP_MYSQL feature is disabled"
+	fi
+fi
+
+log_verbose "Checking if the DELETE_OLD_DATA feature is enabled"
+if ! [ -z $DELETE_OLD_DATA ]; then
+	if [ $DELETE_OLD_DATA == 1 ]; then
+		log_message "DELETE_OLD_DATA feature is enabled"
+	else
+		log_message "DELETE_OLD_DATA feature is disabled"
 	fi
 fi
 
@@ -700,7 +715,7 @@ if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
 	BACKUP_LAYOUT
 fi
 
-if [ $DELETE_OLD_DATA == 1 ];then
+if [ $DELETE_OLD_DATA == 1 ]; then
 	DELETE_OLD_DATA
 fi
 
