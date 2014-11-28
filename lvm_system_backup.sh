@@ -323,8 +323,8 @@ function BACKUP_VG {
 
 		COUNTER=0
 		while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
-				if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
-					   log_warning "Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
+			if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
+				log_warning "Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
 			fi
 			let COUNTER=COUNTER+1
 		done
