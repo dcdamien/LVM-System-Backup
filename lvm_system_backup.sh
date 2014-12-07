@@ -657,14 +657,16 @@ function DELETE_OLD_DATA {
 function FINISH {
 	log_verbose "Cleaning up..."
 
-        while read lv; do
-                if [ -e /dev/$VG_NAME/${lv}_snap ]; then
-                        lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
-			if [ $? -ne 0 ]; then
-				log_error "Couldn't remove ${lv}_snap"
-			fi
-                fi
-        done < $LVS
+	if [ -f $LVS ]; then
+	        while read lv; do
+	                if [ -e /dev/$VG_NAME/${lv}_snap ]; then
+	                        lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
+				if [ $? -ne 0 ]; then
+					log_error "Couldn't remove ${lv}_snap"
+				fi
+	                fi
+	        done < $LVS
+	fi
 
         if [ -f $LOCKFILE ]; then
 		rm $LOCKFILE
