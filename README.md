@@ -15,6 +15,10 @@ Option to send backup to local dir
 
 Support for system backup on gpt partitions
 
+Backup multiple volume groups at once
+
+Support for /boot backup on software raid
+
 License
 =================
 
