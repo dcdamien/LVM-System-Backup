@@ -656,7 +656,7 @@ function BACKUP_LAYOUT {
 }
 
 function DELETE_OLD_DATA {
-	log_verbose "Deleting backups older than $DAYS_OLD in $DIR/$hostname on host $HOST"
+	log_verbose "Deleting backups older than $DAYS_OLD days in $DIR/$hostname on host $HOST"
 	ssh ${USER}@$HOST "find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;"
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
@@ -752,7 +752,7 @@ if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
 fi
 
 if [ $DELETE_OLD_DATA == 1 ]; then
-	log_message "Deleting data older than $DAYS_OLD"
+	log_message "Deleting data older than $DAYS_OLD days"
 	DELETE_OLD_DATA
 	log_message "DELETE_OLD_DATA is done"
 fi
