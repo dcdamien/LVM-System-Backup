@@ -19,6 +19,8 @@ Backup multiple volume groups at once
 
 Support for /boot backup on software raid
 
+Add last backup duration to nagios log
+
 License
 =================
 
