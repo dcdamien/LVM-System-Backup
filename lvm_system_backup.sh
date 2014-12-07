@@ -689,7 +689,7 @@ CHECK_SSH
 
 # Check if remote dir already exists
 log_verbose "Checking if $DIR_FULL already exists on $HOST"
-if (ssh ${USER}@$HOST '[ -d $DIR_FULL ]'); then
+if (ssh ${USER}@$HOST "[ -d $DIR_FULL ]"); then
 	log_warning "Remote dir $DIR_FULL exists on $HOST"
 	log_verbose "Checking IGNORE_REMOTE_DIR"
 	if ! [ $IGNORE_REMOTE_DIR == 1 ]; then
