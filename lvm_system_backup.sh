@@ -794,6 +794,7 @@ if [ $NAGIOS == 1 ]; then
 	echo "$hostname" >> $NAGIOS_LOG
 	echo "$datum" >> $NAGIOS_LOG
 	echo "$time" >> $NAGIOS_LOG
+	echo "$((end-start)) seconds" >> $NAGIOS_LOG
 	echo "successful" >> $NAGIOS_LOG
 fi
 
