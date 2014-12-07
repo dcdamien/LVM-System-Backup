@@ -7,7 +7,6 @@
 start=`date +%s`
 LOCKFILE=/var/run/lvm_system_backup.lock
 NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
-LVS=/tmp/lvs
 MYSQL_DB=/tmp/mysql_db
 NC='\e[0m'			# Message
 RED='\e[0;31m'			# Error
@@ -128,7 +127,7 @@ fi
 	
 # Check BACKUP_VG
 if [[ $BACKUP_VG == 1 ]]; then
-	if [[ -z $VG_NAME || -z $SIZE ]]; then
+	if [[ ${#VG_NAME[@]} -eq 0 ]]; then
 		log_error "The vars for the BACKUP_VG feature are invalid"
 		log_error "Please check them and come back"
 		exit 1
@@ -295,96 +294,109 @@ function BACKUP_VG {
 		log_verbose "lvdisplay found at $LVDISPLAY"
 	fi
 
-	# Check if the specified volume group is there
-	log_verbose "Checking if the volume group $VG_NAME exists"
+	COUNTER2=0
+	while [ $COUNTER2 -lt ${#VG_NAME[@]} ]; do
+		LVS=/tmp/lvs_${VG_NAME[$COUNTER2]}
+		# Check if the specified volume group is there
+		log_verbose "Checking if the volume group $VG_NAME exists"
 
-	if ! [ -d /dev/$VG_NAME ]; then
-		log_error "VG $VG_NAME not found!"
-		exit 1
-	fi
-	# Check if there is enough free space in the specified volume group to create a snapshot
-	log_verbose "Checking if there is enough free space in the VG $VG_NAME to create a $SIZE snapshot"
+		if ! [ -d /dev/${VG_NAME[$COUNTER2]} ]; then
+			log_error "VG $VG_NAME not found!"
+			exit 1
+		fi
+		# Check if there is enough free space in the specified volume group to create a snapshot
+		log_verbose "Checking if there is enough free space in the VG ${VG_NAME[$COUNTER2]} to create a ${SIZE[$COUNTER2]} snapshot"
+				
+		SIZE_SNAPSHOT=$(echo $SIZE | sed -e 's/g//g' | sed -e 's/,/./g' | sed -e 's/G//g')
+		SIZE_FREE=$(lvs /dev/$VG_NAME -o vg_free | tail -1 | tr -d ' ' | sed -e 's/g//g' | sed -e 's/,/./g')
+		SIZE_OUT=$(bc <<< "${SIZE_FREE}-$SIZE_SNAPSHOT")
+		CHECK_SIZE=$(echo $SIZE | grep -c -)
+		SIZE_OUT=$(echo ${SIZE}G | sed -e 's/-//g')
 
-	SIZE_SNAPSHOT=$(echo $SIZE | sed -e 's/g//g' | sed -e 's/,/./g' | sed -e 's/G//g')
-	SIZE_FREE=$(lvs /dev/$VG_NAME -o vg_free | tail -1 | tr -d ' ' | sed -e 's/g//g' | sed -e 's/,/./g')
-	SIZE_OUT=$(bc <<< "${SIZE_FREE}-$SIZE_SNAPSHOT")
-	CHECK_SIZE=$(echo $SIZE | grep -c -)
-	SIZE_OUT=$(echo ${SIZE}G | sed -e 's/-//g')
+		if ! [ $CHECK_SIZE == 0 ]; then
+			log_error "Not enough free space in VG ${VG_NAME[$COUNTER2]} to create a snapshot"
+			log_error "Need at least $SIZE_OUT space more"
+			exit 1
+		fi
 
-	if ! [ $CHECK_SIZE == 0 ]; then
-		log_error "Not enough free space in VG $VG to create a snapshot"
-		log_error "Need at least $SIZE_OUT space more"
-		exit 1
-	fi
+		# Check if the excluded logical volumes are existing
+		if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+			log_verbose "Checking if excluded LVs are existing"
 
-	# Check if the excluded logical volumes are existing
-	if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
-		log_verbose "Checking if excluded LVs are existing"
-
-		COUNTER=0
-		while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
-			if ! [ -b /dev/$VG_NAME/${LV_EXCLUDE[$COUNTER]} ]; then
-				log_warning "Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist"
-			fi
-			let COUNTER=COUNTER+1
-		done
-	fi
-	
-	# Create list with logical volumes
-	log_verbose "Creating list $LVS with all logical volumes in VG $VG_NAME"
-
-	lvdisplay $VG_NAME | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
-
-	if [ $? -ne 0 ]; then
-		log_error "Couldn't create the list with logical volumes"
-		exit 1
-	fi
-	
-	# Exclude logical volumes
-	log_verbose "Checking if there are excluded volumes defined"
-	if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
-		log_verbose "Deleting all excluded logical volumes from the file $LVS"
-		log_verbose "Excluded volume/s is/are: ${LV_EXCLUDE[@]}"
 			COUNTER=0
 			while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
-					sed -i "/${LV_EXCLUDE[$COUNTER]}/d" $LVS
-					let COUNTER=COUNTER+1
+				if ! [ -b /dev/${VG_NAME[$COUNTER2]}/${LV_EXCLUDE[$COUNTER]} ]; then
+					log_warning "Excluded LV ${LV_EXCLUDE[$COUNTER]} doesn't exist in VG ${VG_NAME[$COUNTER2]}"
+				fi
+				let COUNTER=COUNTER+1
 			done
-	else
-		log_verbose "No volumes to exclude!"
-	fi
-	
+		fi
+		
+		# Create list with logical volumes
+		log_verbose "Creating list $LVS with all logical volumes in VG ${VG_NAME[$COUNTER2]}"
+
+		lvdisplay ${VG_NAME[$COUNTER2]} | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
+
+		if [ $? -ne 0 ]; then
+			log_error "Couldn't create the list with logical volumes"
+			exit 1
+		fi
+		
+		# Exclude logical volumes
+		log_verbose "Checking if there are excluded volumes defined"
+		if ! [ ${#LV_EXCLUDE[@]} -eq 0 ]; then
+			log_verbose "Deleting all excluded logical volumes from the file $LVS"
+			log_verbose "Excluded volume/s is/are: ${LV_EXCLUDE[@]}"
+				COUNTER=0
+				while [ $COUNTER -lt ${#LV_EXCLUDE[@]} ]; do
+						sed -i "/${LV_EXCLUDE[$COUNTER]}/d" $LVS
+						let COUNTER=COUNTER+1
+				done
+		else
+			log_verbose "No volumes to exclude!"
+		fi
+		
+		# Create remote backup dir with VG Name
+		log_verbose "Creating directory $DIR_FULL/${VG_NAME[$COUNTER2]} on host $HOST"
+		ssh ${USER}@$HOST mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
+		if [ $? -ne 0 ]; then
+			log_error "Couldn't create the remote dir $DIR_FULL/${VG_NAME[$COUNTER2]} to store the VG backups"
+			exit 1
+		fi
+		
 		# Create a snapshot of every volume and copy it using dd
-	log_verbose "Starting loop for every volume in $LVS"
+		log_verbose "Starting loop for every volume in $LVS"
 
-	while read lv; do
-		# Wrapper to silence output
-		function copy_lv {
-			dd if=/dev/$VG_NAME/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${lv}.img.gz
-		}
+		while read lv; do
+			# Wrapper to silence output
+			function copy_lv {
+				dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+			}
 
-		log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
-		lvcreate --snapshot -L $SIZE -n ${lv}_snap /dev/$VG_NAME/$lv &> /dev/null
+			log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
+			lvcreate --snapshot -L ${SIZE[$COUNTER2]} -n ${lv}_snap /dev/${VG_NAME[$COUNTER2]}/$lv &> /dev/null
 
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't create a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
-			exit 1
-		fi
-		log_verbose "Copy the compressed volume ${lv} via dd to $HOST"
-		copy_lv &> /dev/null
+			if [ $? -ne 0 ]; then
+				log_error "Couldn't create a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
+				exit 1
+			fi
+			log_verbose "Copy the compressed volume ${lv} via dd to $HOST"
+			copy_lv &> /dev/null
 
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't copy the compressed volume ${lv} to $HOST"
-			exit 1
-		fi
-		log_verbose "Removing the snapshot ${lv}_snap"
-		lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
+			if [ $? -ne 0 ]; then
+				log_error "Couldn't copy the compressed volume ${lv} to $HOST"
+				exit 1
+			fi
+			log_verbose "Removing the snapshot ${lv}_snap"
+			lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}_snap &> /dev/null
 
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't delete the snapshot named ${lv}_snap of lv ${lv}"
-			exit 1
-		fi
-	done < $LVS
+			if [ $? -ne 0 ]; then
+				log_error "Couldn't delete the snapshot named ${lv}_snap of lv ${lv}"
+				exit 1
+			fi
+		done < $LVS
+		let COUNTER2=COUNTER2+1
+	done
 }
 
 # Modified code from the offical samba_backup script in source4/scripting/bin/samba_backup by Matthieu Patou
@@ -577,18 +589,8 @@ function CHECK_SSH {
 	fi
 }
 
-function BACKUP_LAYOUT {
-	# Wrapper to silence output
-	function backup_sfdisk {
-		sfdisk --quiet -d $DISK > /tmp/part_table
-		
-		if [ $? -ne 0 ]; then
-			log_error "Could not backup partition table of disk $DISK"
-			log_error "Continuing anyway"
-		fi	
-	}
-	
-	# Backup partition table
+function BACKUP_MBR {
+# Backup partition table
 	log_verbose "Backing up partiton table to /tmp/part_table"
 
 	if [ -d /tmp ]; then
@@ -605,8 +607,7 @@ function BACKUP_LAYOUT {
 		exit 1
 	fi
 
-	# Call sfdisk backup function
-	backup_sfdisk &> /dev/null
+	sfdisk --quiet -d $DISK > /tmp/part_table
 
 	log_verbose "Sending partition table backup to $HOST:$DIR_FULL"
 
@@ -625,34 +626,40 @@ function BACKUP_LAYOUT {
 	log_verbose "Deleting partition table in /tmp/part_table"
 
 	rm /tmp/part_table
+}
 
-	# Backup lvm structure
-	log_verbose "Backing up lvm structure to /tmp/lvm_structure"
+function BACKUP_VG_LAYOUT {
+	COUNTER2=0
+	while [ $COUNTER2 -lt ${#VG_NAME[@]} ]; do
+		# Backup lvm structure
+		log_verbose "Backing up lvm structure to /tmp/lvm_structure"
 
-	vgcfgbackup -f /tmp/lvm_structure /dev/$VG_NAME &> /dev/null
-
-	if [ $? -ne 0 ]; then
-		log_error "Couldn't backup the lvm structure of volume group $VG_NAME"
-		exit 1
-	fi
-
-	log_verbose "Sending lvm structure to $HOST:$DIR_FULL"
-
-	if [ -f /tmp/lvm_structure ]; then
-		scp /tmp/lvm_structure ${USER}@$HOST:$DIR_FULL/lvm_structure &> /dev/null
+		vgcfgbackup -f /tmp/lvm_structure /dev/${VG_NAME[$COUNTER2]} &> /dev/null
 
 		if [ $? -ne 0 ]; then
-			log_error "Cannot login or connect to $HOST"
+			log_error "Couldn't backup the lvm structure of volume group $VG_NAME"
 			exit 1
 		fi
-	else
-		log_error "Can't copy /tmp/lvm_structure to $HOST. File doens't exist"
-		exit 1
-	fi
 
-	log_verbose "Deleting lvm structure in /tmp/lvm_structure"
+		log_verbose "Sending lvm structure to $HOST:$DIR_FULL"
 
-	rm /tmp/lvm_structure
+		if [ -f /tmp/lvm_structure ]; then
+			scp /tmp/lvm_structure ${USER}@$HOST:$DIR_FULL/${VG_NAME[$COUNTER2]}/lvm_structure &> /dev/null
+
+			if [ $? -ne 0 ]; then
+				log_error "Cannot login or connect to $HOST"
+				exit 1
+			fi
+		else
+			log_error "Can't copy /tmp/lvm_structure to $HOST. File doens't exist"
+			exit 1
+		fi
+
+		log_verbose "Deleting lvm structure in /tmp/lvm_structure"
+		rm /tmp/lvm_structure
+		
+		let COUNTER2=COUNTER2+1
+	done	
 }
 
 function DELETE_OLD_DATA {
@@ -667,30 +674,42 @@ function DELETE_OLD_DATA {
 # Exit trap to delete the snapshots and the lockfile
 function FINISH {
 	log_verbose "Cleaning up..."
+	COUNTER2=0
+	while [ $COUNTER2 -lt ${#VG_NAME[@]} ]; do	
+		LVS=/tmp/lvs_${VG_NAME[$COUNTER2]}
+		if [ -f ${LVS}_${VG_NAME[$COUNTER2]} ]; then
+				while read lv; do
+						if [ -e /dev/${VG_NAME[$COUNTER2]}/${lv}_snap ]; then
+								lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}_snap &> /dev/null
+					if [ $? -ne 0 ]; then
+						log_error "Couldn't remove ${lv}_snap"
+					fi
+						fi
+				done < $LVS
+		fi
 
-	if [ -f $LVS ]; then
-	        while read lv; do
-	                if [ -e /dev/$VG_NAME/${lv}_snap ]; then
-	                        lvremove -f /dev/$VG_NAME/${lv}_snap &> /dev/null
-				if [ $? -ne 0 ]; then
-					log_error "Couldn't remove ${lv}_snap"
-				fi
-	                fi
-	        done < $LVS
-	fi
-
-        if [ -f $LOCKFILE ]; then
-		rm $LOCKFILE
-	fi
+		if [ -f $LOCKFILE ]; then
+			rm $LOCKFILE
+		fi
+		
+		if [ -f $LVS ]; then
+			rm $LVS
+		fi
+		let COUNTER2=COUNTER2+1
+		
+	done
 	
 	if [ -f /tmp/samba4.tar.gz ]; then
 		rm /tmp/samba4.tar.gz &> /dev/null
 	fi
-	
+		
 	if [ -d /tmp/samba ]; then
 		rm -r /tmp/samba &> /dev/null
 	fi
-	log_verbose "Done"
+		
+		
+		
+	log_verbose "Done"	
 }
 trap FINISH EXIT
 
@@ -726,12 +745,14 @@ fi
 if [ $BACKUP_BOOT == 1 ]; then
 	log_message "Starting BACKUP_BOOT"
 	BACKUP_BOOT
+	BACKUP_MBR
 	log_message "BACKUP_BOOT is done"
 fi
 
 if [ $BACKUP_VG == 1 ]; then
 	log_message "Starting BACKUP_VG"
-	BACKUP_VG
+			BACKUP_VG
+			BACKUP_VG_LAYOUT
 	log_message "BACKUP_VG is done"
 fi
 
@@ -745,10 +766,6 @@ if [ $BACKUP_MYSQL == 1 ]; then
 	log_message "Starting BACKUP_MYSQL"
 	BACKUP_MYSQL
 	log_message "BACKUP_MYSQL is done"
-fi
-
-if [[ $BACKUP_BOOT == 1 && $BACKUP_VG == 1 ]]; then
-	BACKUP_LAYOUT
 fi
 
 if [ $DELETE_OLD_DATA == 1 ]; then
