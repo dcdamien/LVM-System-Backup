@@ -578,6 +578,16 @@ function CHECK_SSH {
 }
 
 function BACKUP_LAYOUT {
+	# Wrapper to silence output
+	function backup_sfdisk {
+		sfdisk --quiet -d $DISK > /tmp/part_table
+		
+		if [ $? -ne 0 ]; then
+			log_error "Could not backup partition table of disk $DISK"
+			log_error "Continuing anyway"
+		fi	
+	}
+	
 	# Backup partition table
 	log_verbose "Backing up partiton table to /tmp/part_table"
 
@@ -595,7 +605,8 @@ function BACKUP_LAYOUT {
 		exit 1
 	fi
 
-	sfdisk --quiet -d $DISK > /tmp/part_table
+	# Call sfdisk backup function
+	backup_sfdisk &> /dev/null
 
 	log_verbose "Sending partition table backup to $HOST:$DIR_FULL"
 
