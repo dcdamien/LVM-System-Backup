@@ -1,7 +1,7 @@
 LVM-System-Backup
 =================
 
-The script creates a live backup of every logical volume in a specific volume group using lvm snapshots. It is also capable of backing up a Samba ADDC and MySQL databases. The success of the backups can be monitored with nagios. Old backups are deleted after n days.
+The script creates a live backup of every logical volume in multiple volume groups using lvm snapshots. It is also capable of backing up a Samba ADDC and MySQL databases. The success of the backups can be monitored with nagios. Old backups are deleted after n days.
 
 ToDo
 =================
@@ -14,8 +14,6 @@ Create Wiki entry for MySQL database restore
 Option to send backup to local dir
 
 Support for system backup on gpt partitions
-
-Backup multiple volume groups at once
 
 Support for /boot backup on software raid
 
