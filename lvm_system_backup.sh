@@ -706,9 +706,6 @@ function FINISH {
 	if [ -d /tmp/samba ]; then
 		rm -r /tmp/samba &> /dev/null
 	fi
-		
-		
-		
 	log_verbose "Done"	
 }
 trap FINISH EXIT
