@@ -678,18 +678,14 @@ function FINISH {
 	while [ $COUNTER2 -lt ${#VG_NAME[@]} ]; do	
 		LVS=/tmp/lvs_${VG_NAME[$COUNTER2]}
 		if [ -f ${LVS}_${VG_NAME[$COUNTER2]} ]; then
-				while read lv; do
-						if [ -e /dev/${VG_NAME[$COUNTER2]}/${lv}_snap ]; then
-								lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}_snap &> /dev/null
+			while read lv; do
+				if [ -e /dev/${VG_NAME[$COUNTER2]}/${lv}_snap ]; then
+					lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}_snap &> /dev/null
 					if [ $? -ne 0 ]; then
 						log_error "Couldn't remove ${lv}_snap"
 					fi
-						fi
-				done < $LVS
-		fi
-
-		if [ -f $LOCKFILE ]; then
-			rm $LOCKFILE
+				fi
+			done < $LVS
 		fi
 		
 		if [ -f $LVS ]; then
@@ -698,6 +694,10 @@ function FINISH {
 		let COUNTER2=COUNTER2+1
 		
 	done
+	
+	if [ -f $LOCKFILE ]; then
+		rm $LOCKFILE
+	fi
 	
 	if [ -f /tmp/samba4.tar.gz ]; then
 		rm /tmp/samba4.tar.gz &> /dev/null
