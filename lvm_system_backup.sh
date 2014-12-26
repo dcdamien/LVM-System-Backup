@@ -591,6 +591,11 @@ function CHECK_SSH {
 
 function BACKUP_MBR {
 # Backup partition table
+	# Wrapper to silence output
+	function backup_part_table {
+		sfdisk --quiet -d $DISK > /tmp/part_table
+	}
+
 	log_verbose "Backing up partiton table to /tmp/part_table"
 
 	if [ -d /tmp ]; then
@@ -607,7 +612,7 @@ function BACKUP_MBR {
 		exit 1
 	fi
 
-	sfdisk --quiet -d $DISK > /tmp/part_table
+	backup_part_table &> /dev/null
 
 	log_verbose "Sending partition table backup to $HOST:$DIR_FULL"
 
