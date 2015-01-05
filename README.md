@@ -15,8 +15,6 @@ Option to send backup to local dir
 
 Support for system backup on gpt partitions
 
-Support for /boot backup on software raid
-
 Add last backup duration to nagios log
 
 License
