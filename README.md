@@ -17,6 +17,11 @@ Support for system backup on gpt partitions
 
 Add last backup duration to nagios log
 
+Check if APT lock exists
+
+Remount /boot readonly
+
+
 License
 =================
 
