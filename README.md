@@ -21,6 +21,7 @@ Check if APT lock exists
 
 Remount /boot readonly
 
+Support for Wake on lan
 
 License
 =================
