@@ -19,8 +19,6 @@ Add last backup duration to nagios log
 
 Check if APT lock exists
 
-Remount /boot readonly
-
 Support for Wake on lan
 
 Shutdown remote server after backup
