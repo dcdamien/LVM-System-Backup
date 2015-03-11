@@ -23,8 +23,6 @@ Support for Wake on lan
 
 Shutdown remote server after backup
 
-Unsecure data transmission
-
 License
 =================
 
