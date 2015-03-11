@@ -217,6 +217,15 @@ if ! [ -z $DELETE_OLD_DATA ]; then
 	fi
 fi
 
+log_verbose "Checking if the UNSECURE_TRASMISSION feature is enabled"
+if ! [ -z $UNSECURE_TRASMISSION ]; then
+	if [ $UNSECURE_TRASMISSION == 1 ]; then
+		log_message "UNSECURE_TRASMISSION feature is enabled"
+	else
+		log_message "UNSECURE_TRASMISSION feature is disabled"
+	fi
+fi	
+
 # Create lock file
 log_verbose "Creating lock file. Things are getting pretty serious"
 touch $LOCKFILE
@@ -256,11 +265,21 @@ function BACKUP_BOOT {
 	
 	# Wrapper to silence output
 	function copy_boot {
-		dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/boot.img.gz
+		if [ $UNSECURE_TRASMISSION == 1 ]; then
+			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/boot.img.gz &"
+			dd if=$BOOT | gzip -1 - | netcat -q 5 $HOST $PORT
+		else
+			dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/boot.img.gz
+		fi
 	}
 
 	function copy_mbr {
-		dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/mbr.img.gz
+		if [ $UNSECURE_TRASMISSION == 1 ]; then
+			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/mbr.img.gz &"
+			dd if=$DISK bs=512 count=1 | gzip -1 - | netcat -q 5 $HOST $PORT
+		else
+			dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/mbr.img.gz
+		fi	
 	}
 
 	# Remount /boot read only
@@ -273,7 +292,7 @@ function BACKUP_BOOT {
 
 	# Create image of /boot
     	log_verbose "Copy $BOOT to $HOST via dd"
-	copy_boot &> /dev/null
+		copy_boot &> /dev/null
     	if [ $? -ne 0 ]; then
 		log_error "Couldn't copy the boot disk $BOOT to $HOST"
         	exit 1
@@ -281,7 +300,7 @@ function BACKUP_BOOT {
 
     	# Create image of mbr with grub
     	log_verbose "Create a 512 byte image of the mbr"
-	copy_mbr &> /dev/null
+		copy_mbr &> /dev/null
     	if [ $? -ne 0 ]; then
         	log_error "Couldn't create an image of the mbr"
         	exit 1
@@ -384,7 +403,12 @@ function BACKUP_VG {
 		while read lv; do
 			# Wrapper to silence output
 			function copy_lv {
-				dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+				if [ $UNSECURE_TRASMISSION == 1 ]; then
+					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 5 $HOST $PORT
+				else
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+				fi	
 			}
 
 			log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
