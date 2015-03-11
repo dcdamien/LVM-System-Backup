@@ -263,6 +263,14 @@ function BACKUP_BOOT {
 		dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/mbr.img.gz
 	}
 
+	# Remount /boot read only
+	log_verbose "Remounting boot partition $BOOT ro"
+	mount -r -o remount $BOOT
+	if [ $? -ne 0 ]; then
+		log_warning "Couldn't remount $BOOT read only"
+		log_warning "Low risk, i keep going..."
+    	fi
+
 	# Create image of /boot
     	log_verbose "Copy $BOOT to $HOST via dd"
 	copy_boot &> /dev/null
