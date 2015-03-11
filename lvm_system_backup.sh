@@ -268,7 +268,7 @@ function BACKUP_BOOT {
 	function copy_boot {
 		if [ $UNSECURE_TRASMISSION == 1 ]; then
 			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/boot.img.gz &"
-			dd if=$BOOT | gzip -1 - | netcat -q 5 $HOST $PORT
+			dd if=$BOOT | gzip -1 - | netcat -q 1 $HOST $PORT
 		else
 			dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/boot.img.gz
 		fi
@@ -277,7 +277,7 @@ function BACKUP_BOOT {
 	function copy_mbr {
 		if [ $UNSECURE_TRASMISSION == 1 ]; then
 			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/mbr.img.gz &"
-			dd if=$DISK bs=512 count=1 | gzip -1 - | netcat -q 5 $HOST $PORT
+			dd if=$DISK bs=512 count=1 | gzip -1 - | netcat -q 1 $HOST $PORT
 		else
 			dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/mbr.img.gz
 		fi	
@@ -406,7 +406,7 @@ function BACKUP_VG {
 			function copy_lv {
 				if [ $UNSECURE_TRASMISSION == 1 ]; then
 					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 5 $HOST $PORT
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 1 $HOST $PORT
 				else
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
 				fi	
