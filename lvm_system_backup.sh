@@ -22,6 +22,7 @@ BACKUP_MYSQL=0
 NAGIOS=0
 DELETE_OLD_DATA=0
 IGNORE_REMOTE_DIR=0
+UNSECURE_TRASMISSION=0
 
 # Define log functions
 function log_verbose() {
