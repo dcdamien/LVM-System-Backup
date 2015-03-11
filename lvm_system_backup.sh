@@ -22,7 +22,7 @@ BACKUP_MYSQL=0
 NAGIOS=0
 DELETE_OLD_DATA=0
 IGNORE_REMOTE_DIR=0
-UNSECURE_TRASMISSION=0
+UNSECURE_TRANSMISSION=0
 
 # Define log functions
 function log_verbose() {
@@ -218,12 +218,12 @@ if ! [ -z $DELETE_OLD_DATA ]; then
 	fi
 fi
 
-log_verbose "Checking if the UNSECURE_TRASMISSION feature is enabled"
-if ! [ -z $UNSECURE_TRASMISSION ]; then
-	if [ $UNSECURE_TRASMISSION == 1 ]; then
-		log_message "UNSECURE_TRASMISSION feature is enabled"
+log_verbose "Checking if the UNSECURE_TRANSMISSION feature is enabled"
+if ! [ -z $UNSECURE_TRANSMISSION ]; then
+	if [ $UNSECURE_TRANSMISSION == 1 ]; then
+		log_message "UNSECURE_TRANSMISSION feature is enabled"
 	else
-		log_message "UNSECURE_TRASMISSION feature is disabled"
+		log_message "UNSECURE_TRANSMISSION feature is disabled"
 	fi
 fi	
 
@@ -266,7 +266,7 @@ function BACKUP_BOOT {
 	
 	# Wrapper to silence output
 	function copy_boot {
-		if [ $UNSECURE_TRASMISSION == 1 ]; then
+		if [ $UNSECURE_TRANSMISSION == 1 ]; then
 			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/boot.img.gz &"
 			dd if=$BOOT | gzip -1 - | netcat -q 1 $HOST $PORT
 		else
@@ -275,7 +275,7 @@ function BACKUP_BOOT {
 	}
 
 	function copy_mbr {
-		if [ $UNSECURE_TRASMISSION == 1 ]; then
+		if [ $UNSECURE_TRANSMISSION == 1 ]; then
 			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/mbr.img.gz &"
 			dd if=$DISK bs=512 count=1 | gzip -1 - | netcat -q 1 $HOST $PORT
 		else
@@ -404,7 +404,7 @@ function BACKUP_VG {
 		while read lv; do
 			# Wrapper to silence output
 			function copy_lv {
-				if [ $UNSECURE_TRASMISSION == 1 ]; then
+				if [ $UNSECURE_TRANSMISSION == 1 ]; then
 					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 1 $HOST $PORT
 					let PORT=PORT+1
