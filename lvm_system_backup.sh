@@ -289,7 +289,7 @@ function BACKUP_BOOT {
     	
     	# Remount /boot read write
     	log_verbose "Remounting boot partition $BOOT rw"
-    	mount -o remount,rw
+    	mount -o remount,rw $BOOT
     	if [ $? -ne 0 ]; then
 		log_warning "Couldn't remount $BOOT read write again"
 		log_warning "You should check what went wrong"
