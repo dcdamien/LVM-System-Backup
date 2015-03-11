@@ -274,7 +274,6 @@ function BACKUP_BOOT {
 	# Create image of /boot
     	log_verbose "Copy $BOOT to $HOST via dd"
 	copy_boot &> /dev/null
-
     	if [ $? -ne 0 ]; then
 		log_error "Couldn't copy the boot disk $BOOT to $HOST"
         	exit 1
@@ -283,10 +282,17 @@ function BACKUP_BOOT {
     	# Create image of mbr with grub
     	log_verbose "Create a 512 byte image of the mbr"
 	copy_mbr &> /dev/null
-
     	if [ $? -ne 0 ]; then
         	log_error "Couldn't create an image of the mbr"
         	exit 1
+    	fi
+    	
+    	# Remount /boot read write
+    	log_verbose "Remounting boot partition $BOOT rw"
+    	mount -o remount,rw
+    	if [ $? -ne 0 ]; then
+		log_warning "Couldn't remount $BOOT read write again"
+		log_warning "You should check what went wrong"
     	fi
 }
 
