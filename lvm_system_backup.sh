@@ -407,7 +407,7 @@ function BACKUP_VG {
 				if [ $UNSECURE_TRANSMISSION == 1 ]; then
 					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 1 $HOST $PORT
-					let PORT=PORT+1
+					let PORT=$PORT+1
 				else
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
 				fi	
