@@ -28,7 +28,9 @@
                 # Values are 1 for enabled and 0 for disabled
                 # UNSECURE_TRASMISSION=0
         
-                # Port on which the receiving server listens for data. Make sure this port isn't used by other applications, no error handling for this!
+                # Start Port on which the receiving server listens for data. The port will be incremented by one after it was used. This should prevent inconsistency.
+                # A normal run will need n Ports, where n is the total number of logical volumes to backup.
+                # Make sure the ports aren't used by other applications, no error handling for this!
                 # Also iptables could be an issue, just saying ;-)
                 # PORT=60000
 
