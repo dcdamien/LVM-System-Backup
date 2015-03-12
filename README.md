@@ -23,6 +23,8 @@ Support for Wake on lan
 
 Shutdown remote server after backup
 
+Add debug mode
+
 License
 =================
 
