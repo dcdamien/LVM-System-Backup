@@ -25,6 +25,8 @@ Shutdown remote server after backup
 
 Add debug mode
 
+Config option for compression + compression level
+
 License
 =================
 
