@@ -13,8 +13,6 @@ Create Wiki entry for MySQL database restore
 
 Support for system backup on gpt partitions
 
-Add last backup duration to nagios log
-
 Check if APT lock exists
 
 Support for Wake on lan
