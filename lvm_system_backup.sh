@@ -726,7 +726,9 @@ function BACKUP_MBR {
 
 	log_verbose "Deleting partition table in /tmp/part_table"
 
-	rm /tmp/part_table
+	if [ -f /tmp/part_table ]; then
+		rm /tmp/part_table
+	fi	
 }
 
 function BACKUP_VG_LAYOUT {
