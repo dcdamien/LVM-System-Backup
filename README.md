@@ -11,8 +11,6 @@ Create Wiki entry for samba restore
 
 Create Wiki entry for MySQL database restore
 
-Option to send backup to local dir
-
 Support for system backup on gpt partitions
 
 Add last backup duration to nagios log
