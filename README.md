@@ -25,6 +25,8 @@ Config option for compression + compression level
 
 Fix snapshot size calculation
 
+Add error handling functions (handle_error, handle_error_critical)
+
 License
 =================
 
