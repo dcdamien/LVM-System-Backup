@@ -8,7 +8,7 @@ start=`date +%s`
 LOCKFILE=/var/run/lvm_system_backup.lock
 NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
 MYSQL_DB=/tmp/mysql_db
-NC='\e[0m'			# Message
+NC='\e[0m'				# Message
 RED='\e[0;31m'			# Error
 ORANGE='\e[0;33m'		# Warning
 GREEN='\e[0;32m'		# Success
@@ -21,8 +21,9 @@ BACKUP_SAMBA=0
 BACKUP_MYSQL=0
 NAGIOS=0
 DELETE_OLD_DATA=0
-IGNORE_REMOTE_DIR=0
+IGNORE_DIR=0
 UNSECURE_TRANSMISSION=0
+LOCAL_BACKUP=0
 
 # Define log functions
 function log_verbose() {
@@ -110,12 +111,25 @@ if [[ $BACKUP_BOOT == 0 && $BACKUP_VG == 0 && $BACKUP_SAMBA == 0 && $BACKUP_MYSQ
 	exit 1
 fi
 
+log_verbose "Checking if there are conflicting features enabled"
+if [[ $UNSECURE_TRANSMISSION == 1 && $LOCAL_BACKUP == 1 ]]; then
+	log_error "You can't enable UNSECURE_TRANSMISSION and LOCAL_BACKUP!"
+	exit 1
+fi	
+	
 # Check common vars
-if [[ -z "$DIR" || -z "$HOST" || -z "$USER" ]]; then
+if [[ -z "$DIR" || -z "$HOST" ]]; then
 	log_error "Important vars are missing!"
 	log_error "Please check the config file!"
 	exit 1
 fi
+
+if ! [ $LOCAL_BACKUP == 1 ]; then
+	if [ -z $USER ]; then
+		log_error "Please set a user in your config file!"
+		exit 1
+	fi
+fi	
 
 # Check BACKUP_BOOT
 if [ $BACKUP_BOOT == 1 ]; then
@@ -154,9 +168,19 @@ if [[ $BACKUP_MYSQL == 1 ]]; then
 	fi
 fi
 
+# Check DELETE_OLD_DATA
 if [ $DELETE_OLD_DATA == 1 ]; then
 	if [ -z $DAYS_OLD ]; then
 		log_error "The vars for the DELETE_OLD_DATA feature are invalid"
+		log_error "Please check them and come back"
+		exit 1
+	fi
+fi
+
+# Check UNSECURE_TRANSMISSION
+if [ $UNSECURE_TRANSMISSION == 1 ]; then
+	if [ -z $PORT ]; then
+		log_error "The vars for the UNSECURE_TRANSMISSION feature are invalid"
 		log_error "Please check them and come back"
 		exit 1
 	fi
@@ -227,6 +251,15 @@ if ! [ -z $UNSECURE_TRANSMISSION ]; then
 	fi
 fi	
 
+log_verbose "Checking if the LOCAL_BACKUP feature is enabled"
+if ! [ -z $LOCAL_BACKUP ]; then
+	if [ $LOCAL_BACKUP == 1 ]; then
+		log_message "LOCAL_BACKUP feature is enabled"
+	else
+		log_message "LOCAL_BACKUP feature is disabled"
+	fi
+fi	
+
 # Create lock file
 log_verbose "Creating lock file. Things are getting pretty serious"
 touch $LOCKFILE
@@ -266,7 +299,9 @@ function BACKUP_BOOT {
 	
 	# Wrapper to silence output
 	function copy_boot {
-		if [ $UNSECURE_TRANSMISSION == 1 ]; then
+		if [ $LOCAL_BACKUP == 1 ]; then
+			dd if=$BOOT | gzip -1 - | dd of=$DIR_FULL/boot.img.gz
+		elif [ $UNSECURE_TRANSMISSION == 1 ]; then
 			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/boot.img.gz &"
 			dd if=$BOOT | gzip -1 - | netcat -q 1 $HOST $PORT
 		else
@@ -275,7 +310,9 @@ function BACKUP_BOOT {
 	}
 
 	function copy_mbr {
-		if [ $UNSECURE_TRANSMISSION == 1 ]; then
+		if [ $LOCAL_BACKUP == 1 ]; then
+			dd if=$DISK bs=512 count=1 | gzip -1 - | dd of=$DIR_FULL/mbr.img.gz
+		elif [ $UNSECURE_TRANSMISSION == 1 ]; then
 			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/mbr.img.gz &"
 			dd if=$DISK bs=512 count=1 | gzip -1 - | netcat -q 1 $HOST $PORT
 		else
@@ -392,7 +429,11 @@ function BACKUP_VG {
 		
 		# Create remote backup dir with VG Name
 		log_verbose "Creating directory $DIR_FULL/${VG_NAME[$COUNTER2]} on host $HOST"
-		ssh ${USER}@$HOST mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
+		if [ $LOCAL_BACKUP == 1 ]; then
+			mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
+		else	
+			ssh ${USER}@$HOST mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
+		fi	
 		if [ $? -ne 0 ]; then
 			log_error "Couldn't create the remote dir $DIR_FULL/${VG_NAME[$COUNTER2]} to store the VG backups"
 			exit 1
@@ -404,13 +445,15 @@ function BACKUP_VG {
 		while read lv; do
 			# Wrapper to silence output
 			function copy_lv {
-				if [ $UNSECURE_TRANSMISSION == 1 ]; then
+				if [ $LOCAL_BACKUP == 1 ]; then
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+				elif [ $UNSECURE_TRANSMISSION == 1 ]; then
 					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 1 $HOST $PORT
 					let PORT=$PORT+1
 				else
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
-				fi	
+				fi
 			}
 
 			log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
@@ -517,7 +560,12 @@ function BACKUP_SAMBA {
 		fi
 				
 		log_verbose "Sending /tmp/samba4.tar.gz to $HOST"
-		scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR_FULL/samba4.tar.gz &>/dev/null
+		
+		if [ $LOCAL_BACKUP == 1 ]; then
+			cp /tmp/samba4.tar.gz $DIR_FULL/samba4.tar.gz &>/dev/null
+		else 	
+			scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR_FULL/samba4.tar.gz &>/dev/null
+		fi	
 		if [ $? -ne 0 ]; then
 			log_error "Error while sending /tmp/samba4.tar.gz to $HOST"
 			exit 1
@@ -585,7 +633,11 @@ function BACKUP_MYSQL {
 	fi
 
 	log_verbose "Sending databases to $HOST"
-	scp /tmp/mysql_databases.tar.gz ${USER}@$HOST:$DIR_FULL/mysql_databases.tar.gz &> /dev/null
+	if [ $LOCAL_BACKUP == 1 ]; then
+		cp /tmp/mysql_databases.tar.gz $DIR_FULL/mysql_databases.tar.gz
+	else	
+		scp /tmp/mysql_databases.tar.gz ${USER}@$HOST:$DIR_FULL/mysql_databases.tar.gz &> /dev/null
+	fi	
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
 		exit 1
@@ -657,8 +709,12 @@ function BACKUP_MBR {
 	log_verbose "Sending partition table backup to $HOST:$DIR_FULL"
 
 	if [ -f /tmp/part_table ]; then
-		scp /tmp/part_table $USER@$HOST:$DIR_FULL/part_table &> /dev/null
-
+		if [ $LOCAL_BACKUP == 1 ]; then
+			cp /tmp/part_table $DIR_FULL/part_table &> /dev/null
+		else	
+			scp /tmp/part_table $USER@$HOST:$DIR_FULL/part_table &> /dev/null
+		fi	
+		
 		if [ $? -ne 0 ]; then
 			log_error "Cannot login or connect to $HOST"
 			exit 1
@@ -689,8 +745,11 @@ function BACKUP_VG_LAYOUT {
 		log_verbose "Sending lvm structure to $HOST:$DIR_FULL"
 
 		if [ -f /tmp/lvm_structure ]; then
-			scp /tmp/lvm_structure ${USER}@$HOST:$DIR_FULL/${VG_NAME[$COUNTER2]}/lvm_structure &> /dev/null
-
+			if [ $LOCAL_BACKUP == 1 ]; then
+				cp /tmp/lvm_structure $DIR_FULL/${VG_NAME[$COUNTER2]}/lvm_structure &> /dev/null
+			else
+				scp /tmp/lvm_structure ${USER}@$HOST:$DIR_FULL/${VG_NAME[$COUNTER2]}/lvm_structure &> /dev/null
+			fi
 			if [ $? -ne 0 ]; then
 				log_error "Cannot login or connect to $HOST"
 				exit 1
@@ -701,7 +760,9 @@ function BACKUP_VG_LAYOUT {
 		fi
 
 		log_verbose "Deleting lvm structure in /tmp/lvm_structure"
-		rm /tmp/lvm_structure
+		if [ -f /tmp/lvm_structure ]; then
+			rm /tmp/lvm_structure
+		fi	
 		
 		let COUNTER2=COUNTER2+1
 	done	
@@ -709,10 +770,27 @@ function BACKUP_VG_LAYOUT {
 
 function DELETE_OLD_DATA {
 	log_verbose "Deleting backups older than $DAYS_OLD days in $DIR/$hostname on host $HOST"
-	ssh ${USER}@$HOST "find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;"
+	if [ $LOCAL_BACKUP == 1 ]; then
+		find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;
+	else
+		ssh ${USER}@$HOST "find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;"
+	fi	
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
 		exit 1
+	fi
+}
+
+function IGNORE_DIR {
+	if ! [ $IGNORE_DIR == 1 ]; then
+		log_verbose "IGNORE_DIR is set to $IGNORE_DIR"
+		log_error "$DIR_FULL on host $HOST already exists"
+		log_error "Maybe todays backup was already created?"
+		log_error "Set IGNORE_DIR to 1 in the config file if you want to continue anyway!"
+		exit 1
+	else
+		log_warning "IGNORE_DIR is set to $IGNORE_DIR"
+		log_warning "I will continue anyway!"
 	fi
 }
 
@@ -756,29 +834,36 @@ function FINISH {
 trap FINISH EXIT
 
 # Checking server connection
-log_verbose "Checking if I can connect to $HOST"
-CHECK_SSH
-
-# Check if remote dir already exists
-log_verbose "Checking if $DIR_FULL already exists on $HOST"
-if (ssh ${USER}@$HOST "[ -d $DIR_FULL ]"); then
-	log_warning "Remote dir $DIR_FULL exists on $HOST"
-	log_verbose "Checking IGNORE_REMOTE_DIR"
-	if ! [ $IGNORE_REMOTE_DIR == 1 ]; then
-		log_verbose "IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
-		log_error "$DIR_FULL on host $HOST already exists"
-		log_error "Maybe todays backup was already created?"
-		log_error "Set IGNORE_REMOTE_DIR to 1 in the config file if you want to continue anyway!"
-		exit 1
-	else
-		log_warning "IGNORE_REMOTE_DIR is set to $IGNORE_REMOTE_DIR"
-		log_warning "I will continue anyway!"
-	fi
+if ! [ $LOCAL_BACKUP == 1 ];  then
+	log_verbose "Checking if I can connect to $HOST"
+	CHECK_SSH
 fi
+	
+# Check if local or remote dir already exists
+log_verbose "Checking if $DIR_FULL already exists on $HOST"
+if [ $LOCAL_BACKUP == 1 ]; then
+	if [ -d $DIR_FULL ]; then
+		log_warning "Remote dir $DIR_FULL exists on $HOST"
+		log_verbose "Checking IGNORE_DIR"
+		IGNORE_DIR
+	fi
+else
+	if (ssh ${USER}@$HOST "[ -d $DIR_FULL ]"); then
+		log_warning "Remote dir $DIR_FULL exists on $HOST"
+		log_verbose "Checking IGNORE_DIR"
+		IGNORE_DIR
+	fi
+fi	
+
+
 
 # Create remote backup dir
 log_verbose "Creating remote dir $DIR_FULL to store the backups on $HOST"
-ssh ${USER}@$HOST mkdir -p $DIR_FULL &>/dev/null
+if [ $LOCAL_BACKUP == 1 ];  then
+	mkdir -p $DIR_FULL &>/dev/null
+else
+	ssh ${USER}@$HOST mkdir -p $DIR_FULL &>/dev/null
+fi	
 if [ $? -ne 0 ]; then
 	log_error "Couldn't create the remote dir $DIR_FULL to store the backups"
 	exit 1
