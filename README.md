@@ -31,6 +31,8 @@ Fix snapshot size calculation
 
 Add error handling functions (handle_error, handle_error_critical)
 
+Own file for functions
+
 License
 =================
 
