@@ -631,6 +631,9 @@ function BACKUP_MYSQL {
 		log_error "Not sure what went wrong"
 		exit 1
 	fi
+	
+	log_verbose "Deleting uncompressed databases in /tmp"
+	rm /tmp/*.sql &>/dev/null
 
 	log_verbose "Sending databases to $HOST"
 	if [ $LOCAL_BACKUP == 1 ]; then
