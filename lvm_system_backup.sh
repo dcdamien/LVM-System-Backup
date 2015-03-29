@@ -478,7 +478,7 @@ function BACKUP_VG {
 				exit 1
 			fi
 		done < $LVS
-		let COUNTER2=COUNTER2+1
+		let COUNTER2=$COUNTER2+1
 	done
 }
 
