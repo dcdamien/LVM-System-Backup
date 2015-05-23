@@ -33,6 +33,8 @@ Add error handling functions (handle_error, handle_error_critical)
 
 Own file for functions
 
+Check if snapshot already exists
+
 License
 =================
 
