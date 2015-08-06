@@ -9,31 +9,20 @@ https://github.com/MrCrankHank/LVM-System-Backup/wiki/Usage
 
 ToDo
 =================
-Create Wiki entry for complete system restore
-
-Create Wiki entry for samba restore
-
-Create Wiki entry for MySQL database restore
-
-Support for system backup on gpt partitions
-
-Check if APT lock exists
-
-Support for Wake on lan
-
-Shutdown remote server after backup
-
-Add debug mode
-
-Config option for compression + compression level
-
-Fix snapshot size calculation
-
-Add error handling functions (handle_error, handle_error_critical)
-
-Own file for functions
-
-Check if snapshot already exists
+- [ ] Create Wiki entry for complete system restore
+- [ ]  Create Wiki entry for samba restore
+- [ ]  Create Wiki entry for MySQL database restore
+- [ ]  Support for system backup on gpt partitions
+- [ ]  Check if APT lock exists
+- [ ]  Support for Wake on lan
+- [ ]  Shutdown remote server after backup
+- [ ]  Add debug mode
+- [ ]  Config option for compression + compression level
+- [ ]  Fix snapshot size calculation
+- [ ]  Add error handling functions (handle_error, handle_error_critical)
+- [ ]  Own file for functions
+- [ ] Check if snapshot already exists
+- [ ] Rewrite this in python...
 
 License
 =================
