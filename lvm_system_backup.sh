@@ -255,10 +255,13 @@ log_verbose "Checking if the LOCAL_BACKUP feature is enabled"
 if ! [ -z $LOCAL_BACKUP ]; then
 	if [ $LOCAL_BACKUP == 1 ]; then
 		log_message "LOCAL_BACKUP feature is enabled"
+		# Set HOST var to value indicating that backup is saved to local dir instead remote
+		HOST=$DIR" (LOCAL_BACKUP)"
 	else
 		log_message "LOCAL_BACKUP feature is disabled"
 	fi
 fi	
+
 
 # Create lock file
 log_verbose "Creating lock file. Things are getting pretty serious"
@@ -365,6 +368,17 @@ function BACKUP_VG {
 		log_verbose "lvdisplay found at $LVDISPLAY"
 	fi
 
+	# Check if lvs is found
+	log_verbose "Checking if lvs is installed"
+	LVS_BIN=`which lvs`
+	if [ -z $LVS_BIN ]; then
+		log_error "Couldn't find lvs"
+		log_error "Are you sure your system is using lvm?"
+		exit 1
+	else
+		log_verbose "lvs found at $LVS_BIN"
+	fi
+
 	COUNTER2=0
 	while [ $COUNTER2 -lt ${#VG_NAME[@]} ]; do
 		LVS=/tmp/lvs_${VG_NAME[$COUNTER2]}
@@ -406,7 +420,10 @@ function BACKUP_VG {
 		# Create list with logical volumes
 		log_verbose "Creating list $LVS with all logical volumes in VG ${VG_NAME[$COUNTER2]}"
 
-		lvdisplay ${VG_NAME[$COUNTER2]} | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
+		# List all volumes excluding snapshots
+		lvs -o lv_name ${VG_NAME[$COUNTER2]} --noheadings -S 'lv_attr!~[^s.*]' | sed -e 's/^[ \t]*//' > $LVS
+
+		# lvdisplay ${VG_NAME[$COUNTER2]} | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
 
 		if [ $? -ne 0 ]; then
 			log_error "Couldn't create the list with logical volumes"
@@ -446,23 +463,31 @@ function BACKUP_VG {
 			# Wrapper to silence output
 			function copy_lv {
 				if [ $LOCAL_BACKUP == 1 ]; then
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | gzip -1 - | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
 				elif [ $UNSECURE_TRANSMISSION == 1 ]; then
 					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | netcat -q 1 $HOST $PORT
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | gzip -1 - | netcat -q 1 $HOST $PORT
 					let PORT=$PORT+1
 				else
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}_snap | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | ssh ${USER}@$HOST "cat > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4"
 				fi
 			}
 
-			log_verbose "Creating a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
-			lvcreate --snapshot -L ${SIZE[$COUNTER2]} -n ${lv}_snap /dev/${VG_NAME[$COUNTER2]}/$lv &> /dev/null
+			log_verbose "Creating a $SIZE snapshot named ${lv}$SNAPSHOT_SUFFIX of LV ${lv} in VG $VG_NAME"
+
+			lvcreate --snapshot -L ${SIZE[$COUNTER2]} -n ${lv}$SNAPSHOT_SUFFIX /dev/${VG_NAME[$COUNTER2]}/$lv &> /dev/null
 
 			if [ $? -ne 0 ]; then
-				log_error "Couldn't create a $SIZE snapshot named ${lv}_snap of LV ${lv} in VG $VG_NAME"
-				exit 1
+				log_warning "Couldn't create a $SIZE snapshot named ${lv}$SNAPSHOT_SUFFIX of LV ${lv} in VG $VG_NAME, checking if snapshot already exist"
+
+				if [ -b /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX ]; then
+					log_verbose "Snapshot named ${lv}$SNAPSHOT_SUFFIX already exist"
+				else
+					log_error "Snapshot named ${lv}$SNAPSHOT_SUFFIX not exist"
+					exit 1
+				fi
 			fi
+
 			log_verbose "Copy the compressed volume ${lv} via dd to $HOST"
 			copy_lv &> /dev/null
 
@@ -470,11 +495,11 @@ function BACKUP_VG {
 				log_error "Couldn't copy the compressed volume ${lv} to $HOST"
 				exit 1
 			fi
-			log_verbose "Removing the snapshot ${lv}_snap"
-			lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}_snap &> /dev/null
+			log_verbose "Removing the snapshot ${lv}$SNAPSHOT_SUFFIX"
+			lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX &> /dev/null
 
 			if [ $? -ne 0 ]; then
-				log_error "Couldn't delete the snapshot named ${lv}_snap of lv ${lv}"
+				log_error "Couldn't delete the snapshot named ${lv}$SNAPSHOT_SUFFIX of lv ${lv}"
 				exit 1
 			fi
 		done < $LVS
@@ -807,10 +832,10 @@ function FINISH {
 		LVS=/tmp/lvs_${VG_NAME[$COUNTER2]}
 		if [ -f ${LVS}_${VG_NAME[$COUNTER2]} ]; then
 			while read lv; do
-				if [ -e /dev/${VG_NAME[$COUNTER2]}/${lv}_snap ]; then
-					lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}_snap &> /dev/null
+				if [ -e /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX ]; then
+					lvremove -f /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX &> /dev/null
 					if [ $? -ne 0 ]; then
-						log_error "Couldn't remove ${lv}_snap"
+						log_error "Couldn't remove ${lv}$SNAPSHOT_SUFFIX"
 					fi
 				fi
 			done < $LVS

@@ -1,17 +1,17 @@
 # Place this file under /etc/default or specify the location as first parameter
 	# The backup will be send over the network to a remote host, if you do not want this, you can enable the backup to a local folder useing this option
-	# LOCAL_BACKUP=""
+	# LOCAL_BACKUP="1"
 
         # Path on local/remote host where the images are saved. I will create two directorys with hostname and date under it.
-        DIR=""
+        # DIR=""
 
         # Host to store the backup
 	# If you use the LOCAL_BACKUP feature just set this to 'localhost'
-        HOST=""
+        # HOST=""
 
         # User to login to $HOST via SSH/SCP
 	# Only needed if the backup is send over the network
-        USER=""
+        # USER=""
 
         # Override PATH var
         # PATH=""
@@ -20,10 +20,10 @@
         # hostname=""
 
         # Verbose, values are 1 for enabled and 0 for disabled. Default is disabled
-        # VERBOSE=
+        # VERBOSE="1"
         
         # Should I override the local/remote dir if it already exists? Values are 1 for enabled and 0 for disabled.
-        # IGNORE_DIR=
+        # IGNORE_DIR="1"
         
         # By default, the data copied with dd is piped over ssh. If encryption isn't need, it's also possible to send it raw.
         # Turning this to 1 will improve performance. But it also means that the data can be captured in plain text or manipulated.
@@ -41,27 +41,32 @@
 
         # /boot backup feature
                 # Backup /boot device? Only if /boot is on an own partition, outside of the vg. Values are 1 for enabled and 0 for disabled.
-                # BACKUP_BOOT=""
+                # BACKUP_BOOT=0
 
                 # Path to disk, e.g. /dev/sda
-                # DISK=""
+                # DISK="/dev/vda"
 
                 # Path to /boot, e.g. /dev/sda1
-                # BOOT=""
+                #BOOT="/dev/vda1"
 
         # VG backup feature
                 # Backup a VG? Values are 1 for enabled and 0 for disabled. Default is enabled.
-                # BACKUP_VG=
+                # BACKUP_VG=1
 
                 # Volume Group to backup, eg =('VG_System' 'VG_data')
-                # declare -a VG_NAME=
+                # declare -a VG_NAME=('vg')
+
 
                 # The following vars have to be set for every volume group.
                 # Size of the snapshot, e.g. 3G
-                # declare -a SIZE=
+                # declare -a SIZE=('3G')
 
                 # Exclude logical volume, e.g. =('LV_excluded1' 'LV_excluded2')
                 # declare -a LV_EXCLUDE=
+
+		# Snapshot suffix
+		# SNAPSHOT_SUFFIX="-snap"
+
 
 
         # Nagios, write a log file for the nagios plugin to parse
