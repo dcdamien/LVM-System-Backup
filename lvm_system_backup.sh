@@ -337,8 +337,8 @@ function BACKUP_VG {
 					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | lz4 | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4
 				elif [ $UNSECURE_TRANSMISSION == 1 ]; then
 						
-					ssh -p $SSH_PORT -n ${USER}@$HOST "nohup netcat -l -p $PORT > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4 &"
-					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | netcat -q 1 $HOST $PORT
+					ssh -p $SSH_PORT -n ${USER}@$HOST "nohup netcat -l -p $PORT -q 10 > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4 &"
+					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | netcat -q 10 $HOST $PORT
 						
 					let PORT=$PORT+1
 				else
