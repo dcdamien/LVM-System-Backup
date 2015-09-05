@@ -364,7 +364,7 @@ function CHECK_SSH {
 	fi
 	
 	if ! [ -f ~/.ssh/id_rsa ]; then
-		log_warning "Can't find the privat key in your ~/.ssh directory. No public key authentication possible."
+		log_warning "Can't find the private key in your ~/.ssh directory. Probably no public key authentication possible."
 		log_warning "You need to setup public key authentication with the server that will store your backups."
 		log_warning "For testing purpose you can also manually type a password."
 	elif [ -f ~/.ssh/id_rsa ]; then
