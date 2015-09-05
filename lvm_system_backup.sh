@@ -18,7 +18,6 @@ BACKUP_VG=0
 NAGIOS=0
 DELETE_OLD_DATA=0
 IGNORE_DIR=0
-UNSECURE_TRANSMISSION=0
 LOCAL_BACKUP=0
 SSH_PORT=22
 
@@ -107,12 +106,6 @@ if [[ $BACKUP_VG == 0 ]]; then
 	log_error "You haven't configured any backup features!"
 	exit 1
 fi
-
-log_verbose "Checking if there are conflicting features enabled"
-if [[ $UNSECURE_TRANSMISSION == 1 && $LOCAL_BACKUP == 1 ]]; then
-	log_error "You can't enable UNSECURE_TRANSMISSION and LOCAL_BACKUP!"
-	exit 1
-fi	
 	
 # Check common vars
 if [[ -z "$DIR" || -z "$HOST" ]]; then
@@ -141,15 +134,6 @@ fi
 if [ $DELETE_OLD_DATA == 1 ]; then
 	if [ -z $DAYS_OLD ]; then
 		log_error "The vars for the DELETE_OLD_DATA feature are invalid"
-		log_error "Please check them and come back"
-		exit 1
-	fi
-fi
-
-# Check UNSECURE_TRANSMISSION
-if [ $UNSECURE_TRANSMISSION == 1 ]; then
-	if [ -z $PORT ]; then
-		log_error "The vars for the UNSECURE_TRANSMISSION feature are invalid"
 		log_error "Please check them and come back"
 		exit 1
 	fi
@@ -184,15 +168,6 @@ if ! [ -z $DELETE_OLD_DATA ]; then
 		log_message "DELETE_OLD_DATA feature is disabled"
 	fi
 fi
-
-log_verbose "Checking if the UNSECURE_TRANSMISSION feature is enabled"
-if ! [ -z $UNSECURE_TRANSMISSION ]; then
-	if [ $UNSECURE_TRANSMISSION == 1 ]; then
-		log_message "UNSECURE_TRANSMISSION feature is enabled"
-	else
-		log_message "UNSECURE_TRANSMISSION feature is disabled"
-	fi
-fi	
 
 log_verbose "Checking if the LOCAL_BACKUP feature is enabled"
 if ! [ -z $LOCAL_BACKUP ]; then
@@ -334,13 +309,7 @@ function BACKUP_VG {
 			# Wrapper to silence output
 			function copy_lv {
 				if [ $LOCAL_BACKUP == 1 ]; then
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | lz4 | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4
-				elif [ $UNSECURE_TRANSMISSION == 1 ]; then
-						
-					ssh -p $SSH_PORT -n ${USER}@$HOST "nohup netcat -l -p $PORT -q 10 > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4 &"
-					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | netcat -q 10 $HOST $PORT
-						
-					let PORT=$PORT+1
+					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | cat > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4
 				else
 					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | ssh -p $SSH_PORT ${USER}@$HOST "cat > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4"
 				fi
