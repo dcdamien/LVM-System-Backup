@@ -281,7 +281,7 @@ function BACKUP_VG {
 		log_verbose "Creating list $LVS with all logical volumes in VG ${VG_NAME[$COUNTER2]}"
 
 		# List all volumes excluding snapshots
-		lvs -o lv_name,lv_attr ${VG_NAME[$COUNTER2]} --noheadings | egrep '\s+[o][a-z-]*$' | awk '{ print $1 }' > $LVS
+		lvs -o lv_name,lv_attr ${VG_NAME[$COUNTER2]} --noheadings | egrep '\s+[Vo][a-z-]*$' | awk '{ print $1 }' > $LVS
 
 		# lvdisplay ${VG_NAME[$COUNTER2]} | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
 
