@@ -238,6 +238,17 @@ function BACKUP_VG {
 	else
 		log_verbose "lvs found at $LVS_BIN"
 	fi
+	
+	# Check if lz4 is found
+	log_verbose "Checking if lz4 is installed"
+	LZ4_BIN=`which lz4`
+	if [ -z $LZ4_BIN ]; then
+		log_error "Couldn't find lz4"
+		log_error "Are you sure your system have lz4 installed?"
+		exit 1
+	else
+		log_verbose "lz4 found at $LZ4_BIN"
+	fi
 
 	COUNTER2=0
 	while [ $COUNTER2 -lt ${#VG_NAME[@]} ]; do
