@@ -7,7 +7,6 @@
 start=`date +%s`
 LOCKFILE=/var/run/lvm_system_backup.lock
 NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
-MYSQL_DB=/tmp/mysql_db
 NC='\e[0m'				# Message
 RED='\e[0;31m'			# Error
 ORANGE='\e[0;33m'		# Warning
@@ -15,15 +14,13 @@ GREEN='\e[0;32m'		# Success
 MAGENTA='\e[95m'		# Verbose
 BLUE='\e[34m'			# Message
 VERBOSE=0
-BACKUP_BOOT=0
 BACKUP_VG=0
-BACKUP_SAMBA=0
-BACKUP_MYSQL=0
 NAGIOS=0
 DELETE_OLD_DATA=0
 IGNORE_DIR=0
 UNSECURE_TRANSMISSION=0
 LOCAL_BACKUP=0
+SSH_PORT=22
 
 # Define log functions
 function log_verbose() {
@@ -106,7 +103,7 @@ if [ -z $hostname ]; then
 fi
 
 log_verbose "Checking if there are backup features enabled"
-if [[ $BACKUP_BOOT == 0 && $BACKUP_VG == 0 && $BACKUP_SAMBA == 0 && $BACKUP_MYSQL == 0 ]]; then
+if [[ $BACKUP_VG == 0 ]]; then
 	log_error "You haven't configured any backup features!"
 	exit 1
 fi
@@ -130,39 +127,11 @@ if ! [ $LOCAL_BACKUP == 1 ]; then
 		exit 1
 	fi
 fi	
-
-# Check BACKUP_BOOT
-if [ $BACKUP_BOOT == 1 ]; then
-	if [[ -z $DISK || -z $BOOT ]]; then
-		log_error "The vars for the BACKUP_BOOT feature are invalid"
-		log_error "Please check them and come back"
-		exit 1
-	fi
-fi
 	
 # Check BACKUP_VG
 if [[ $BACKUP_VG == 1 ]]; then
 	if [[ ${#VG_NAME[@]} -eq 0 ]]; then
 		log_error "The vars for the BACKUP_VG feature are invalid"
-		log_error "Please check them and come back"
-		exit 1
-	fi
-fi
-
-# Check BACKUP_SAMBA
-if [[ $BACKUP_SAMBA == 1 ]]; then
-	if [ ${#SAMBA_DIRS[@]} -eq 0 ]; then
-		log_error "The array SAMBA_DIRS has no fields"
-		log_error "This array must be configured with the paths to your samba data"
-		log_error "Please check it and come back"
-		exit 1
-	fi
-fi
-
-# Check BACKUP_MYSQL
-if [[ $BACKUP_MYSQL == 1 ]]; then
-	if [[ -z $MYSQL_USER || -z $MYSQL_PASSWORD ]]; then
-		log_error "The vars for the BACKUP_MYSQL feature are invalid"
 		log_error "Please check them and come back"
 		exit 1
 	fi
@@ -188,14 +157,6 @@ fi
 
 # Checking enabled backup features
 log_message "Checking enabled features"
-log_verbose "Checking if the BACKUP_BOOT feature is enabled"
-if ! [ -z $BACKUP_BOOT ]; then
-	if [ $BACKUP_BOOT == 1 ]; then
-		log_message "BACKUP_BOOT feature is enabled"
-	else
-		log_message "BACKUP_BOOT feature is disabled"
-	fi
-fi
 
 log_verbose "Checking if the BACKUP_VG feature is enabled"
 if ! [ -z $BACKUP_VG ]; then
@@ -212,24 +173,6 @@ if ! [ -z $NAGIOS ]; then
 		log_message "NAGIOS feature is enabled"
 	else
 		log_message "NAGIOS feature is disabled"
-	fi
-fi
-
-log_verbose "Checking if the BACKUP_SAMBA feature is enabled"
-if ! [ -z $BACKUP_SAMBA ]; then
-	if [ $BACKUP_SAMBA == 1 ]; then
-		log_message "BACKUP_SAMBA feature is enabled"
-	else
-		log_message "BACKUP_SAMBA feature is disabled"
-	fi
-fi
-
-log_verbose "Checking if the BACKUP_MYSQL feature is enabled"
-if ! [ -z $BACKUP_MYSQL ]; then
-	if [ $BACKUP_MYSQL == 1 ]; then
-		log_message "BACKUP_MYSQL feature is enabled"
-	else
-		log_message "BACKUP_MYSQL feature is disabled"
 	fi
 fi
 
@@ -268,104 +211,21 @@ log_verbose "Creating lock file. Things are getting pretty serious"
 touch $LOCKFILE
 
 # Create dir var with subfolders
-datum=`date +%m/%d/%y`
-DIR_DATE=`date +%m-%d-%y`
+datum=`date +%d/%m/%y`
+DIR_DATE=`date +%d-%m-%y`
 time=`date +"%T"`
 DIR_FULL=$DIR/$hostname/$DIR_DATE
-
-function BACKUP_BOOT {
-	# Checks for the backup boot feature
-	if [ $BACKUP_BOOT == 1 ]; then
-		log_verbose "Checking if the disk $DISK exists"
-
-		if ! [ -b $DISK ]; then
-			log_error "Disk $DISK not found!"
-			exit 1
-		fi
-
-		log_verbose "Checking if the boot disk $BOOT exists"
-
-		if ! [ -b $BOOT ]; then
-			log_error "Boot Disk $BOOT not found!"
-			exit 1
-		fi
-
-		log_verbose "Checking if the boot disk $BOOT is mounted on /boot"
-
-		MOUNT=$(mount | grep /boot | grep -o $BOOT)
-
-		if [ -z $MOUNT ]; then
-			log_error "Boot disk $BOOT is not mounted on /boot"
-			exit 1
-		fi
-	fi
-	
-	# Wrapper to silence output
-	function copy_boot {
-		if [ $LOCAL_BACKUP == 1 ]; then
-			dd if=$BOOT | gzip -1 - | dd of=$DIR_FULL/boot.img.gz
-		elif [ $UNSECURE_TRANSMISSION == 1 ]; then
-			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/boot.img.gz &"
-			dd if=$BOOT | gzip -1 - | netcat -q 1 $HOST $PORT
-		else
-			dd if=$BOOT | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/boot.img.gz
-		fi
-	}
-
-	function copy_mbr {
-		if [ $LOCAL_BACKUP == 1 ]; then
-			dd if=$DISK bs=512 count=1 | gzip -1 - | dd of=$DIR_FULL/mbr.img.gz
-		elif [ $UNSECURE_TRANSMISSION == 1 ]; then
-			ssh ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/mbr.img.gz &"
-			dd if=$DISK bs=512 count=1 | gzip -1 - | netcat -q 1 $HOST $PORT
-		else
-			dd if=$DISK bs=512 count=1 | gzip -1 - | ssh ${USER}@$HOST dd of=$DIR_FULL/mbr.img.gz
-		fi	
-	}
-
-	# Remount /boot read only
-	log_verbose "Remounting boot partition $BOOT ro"
-	mount -r -o remount $BOOT
-	if [ $? -ne 0 ]; then
-		log_warning "Couldn't remount $BOOT read only"
-		log_warning "Low risk, i keep going..."
-    	fi
-
-	# Create image of /boot
-    	log_verbose "Copy $BOOT to $HOST via dd"
-		copy_boot &> /dev/null
-    	if [ $? -ne 0 ]; then
-		log_error "Couldn't copy the boot disk $BOOT to $HOST"
-        	exit 1
-    	fi
-
-    	# Create image of mbr with grub
-    	log_verbose "Create a 512 byte image of the mbr"
-		copy_mbr &> /dev/null
-    	if [ $? -ne 0 ]; then
-        	log_error "Couldn't create an image of the mbr"
-        	exit 1
-    	fi
-    	
-    	# Remount /boot read write
-    	log_verbose "Remounting boot partition $BOOT rw"
-    	mount -o remount,rw $BOOT
-    	if [ $? -ne 0 ]; then
-		log_warning "Couldn't remount $BOOT read write again"
-		log_warning "You should check what went wrong"
-    	fi
-}
 
 function BACKUP_VG {
 	# Check if lvdisplay is found
 	log_verbose "Checking if lvdisplay is installed"
-	LVDISPLAY=`which lvdisplay`
-	if [ -z $LVDISPLAY ]; then
+	LVDISPLAY_BIN=`which lvdisplay`
+	if [ -z $LVDISPLAY_BIN ]; then
 		log_error "Couldn't find lvdisplay"
 		log_error "Are you sure your system is using lvm?"
 		exit 1
 	else
-		log_verbose "lvdisplay found at $LVDISPLAY"
+		log_verbose "lvdisplay found at $LVDISPLAY_BIN"
 	fi
 
 	# Check if lvs is found
@@ -449,7 +309,7 @@ function BACKUP_VG {
 		if [ $LOCAL_BACKUP == 1 ]; then
 			mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
 		else	
-			ssh ${USER}@$HOST mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
+			ssh -p $SSH_PORT ${USER}@$HOST mkdir -p $DIR_FULL/${VG_NAME[$COUNTER2]} &>/dev/null
 		fi	
 		if [ $? -ne 0 ]; then
 			log_error "Couldn't create the remote dir $DIR_FULL/${VG_NAME[$COUNTER2]} to store the VG backups"
@@ -463,13 +323,15 @@ function BACKUP_VG {
 			# Wrapper to silence output
 			function copy_lv {
 				if [ $LOCAL_BACKUP == 1 ]; then
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | gzip -1 - | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz
+					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | lz4 | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4
 				elif [ $UNSECURE_TRANSMISSION == 1 ]; then
-					ssh -n ${USER}@$HOST "nohup netcat -l -p $PORT | dd of=$DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.gz &"
-					dd if=/dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | gzip -1 - | netcat -q 1 $HOST $PORT
+						
+					ssh -p $SSH_PORT -n ${USER}@$HOST "nohup netcat -l -p $PORT > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4 &"
+					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | netcat -q 1 $HOST $PORT
+						
 					let PORT=$PORT+1
 				else
-					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | ssh ${USER}@$HOST "cat > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4"
+					lz4 < /dev/${VG_NAME[$COUNTER2]}/${lv}$SNAPSHOT_SUFFIX | ssh -p $SSH_PORT ${USER}@$HOST "cat > $DIR_FULL/${VG_NAME[$COUNTER2]}/${lv}.img.lz4"
 				fi
 			}
 
@@ -507,184 +369,11 @@ function BACKUP_VG {
 	done
 }
 
-# Modified code from the offical samba_backup script in source4/scripting/bin/samba_backup by Matthieu Patou
-function BACKUP_SAMBA {
-	log_verbose "Checking if rsync is installed"
-	VRSYNC=`which rsync`
-	if [ -z $VRSYNC ]; then
-		log_error "Cannot find rsync"
-		log_error "Please install rsync"
-		exit 1
-	else
-		log_verbose "rsync is at $VRSYNC"
-	fi
-	
-	
-	log_verbose "Checking if tdbbackkup is there"
-	TDBBACKUP=`which tdbbackup`
-	if [ -z $TDBBACKUP ]; then
-		log_error "Cannot find tdbbackup"
-		log_error "Please check if you installed samba correctly"
-		exit 1
-	else
-		log_verbose "tdbbackup is at $TDBBACKUP"
-	fi
-	
-	if [ -d /tmp/samba ]; then
-		log_error "/tmp/samba folder already exists"
-		log_error "Please delete it and start the script again"
-		exit 1
-	else
-		mkdir /tmp/samba
-	fi
-	
-	log_verbose "Creating backup of samba files"
-	if ! [ ${#SAMBA_DIRS[@]} -eq 0 ]; then
-		COUNTER=0
-		while [ $COUNTER -lt ${#SAMBA_DIRS[@]} ]; do
-			if [[ ${SAMBA_DIRS[$COUNTER]} == *private* ]]; then
-				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak &>/dev/null
-				for ldb in ${SAMBA_DIRS[$COUNTER]}; do
-					tdbbackup $ldb/*.ldb
-					if [ $? -ne 0 ]; then
-						log_error "Could not backup $ldb"
-						exit 1
-					fi
-				done
-				
-				log_verbose "Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
-				mkdir -p /tmp/samba/${SAMBA_DIRS[$COUNTER]} &>/dev/null
-				rsync -avzqR --exclude *.ldb ${SAMBA_DIRS[$COUNTER]} /tmp/samba
-				if [ $? -ne 0 ]; then
-					log_error "Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
-					exit 1
-				fi
-				
-				log_verbose "Deleting ldb.bak files from ${SAMBA_DIRS[$COUNTER]}"
-				rm ${SAMBA_DIRS[$COUNTER]}/*.ldb.bak &>/dev/null
-				if [ $? -ne 0 ]; then
-					log_error "Deletion of ldb.bak files in ${SAMBA_DIRS[$COUNTER]} failed"
-					exit 1
-				fi
-			else
-				log_verbose "Copy ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
-				mkdir -p /tmp/samba/${SAMBA_DIRS[$COUNTER]} &>/dev/null
-				rsync -avzqR ${SAMBA_DIRS[$COUNTER]} /tmp/samba
-				if [ $? -ne 0 ]; then
-					log_error "Couldn't rsync ${SAMBA_DIRS[$COUNTER]} to /tmp/samba"
-					exit 1
-				fi
-			fi
-			let COUNTER=COUNTER+1
-		done
-		log_verbose "Compressing /tmp/samba to /tmp/samba4.tar.gz"
-		tar czf /tmp/samba4.tar.gz /tmp/samba &>/dev/null
-		if [ $? -ne 0 ]; then
-			log_error "Couldn't compress /tmp/samba to /tmp/samba4.tar.gz"
-			exit 1
-		fi
-				
-		log_verbose "Sending /tmp/samba4.tar.gz to $HOST"
-		
-		if [ $LOCAL_BACKUP == 1 ]; then
-			cp /tmp/samba4.tar.gz $DIR_FULL/samba4.tar.gz &>/dev/null
-		else 	
-			scp /tmp/samba4.tar.gz ${USER}@$HOST:$DIR_FULL/samba4.tar.gz &>/dev/null
-		fi	
-		if [ $? -ne 0 ]; then
-			log_error "Error while sending /tmp/samba4.tar.gz to $HOST"
-			exit 1
-		fi
-			
-		log_verbose "Removing /tmp/samba4.tar.gz"
-		if [ -f /tmp/samba4.tar.gz ]; then
-			rm /tmp/samba4.tar.gz &> /dev/null
-		fi
-			
-		log_verbose "Removing /tmp/samba"
-		if [ -d /tmp/samba ]; then
-			rm -r /tmp/samba &> /dev/null
-		fi
-	fi
-}
-
-function BACKUP_MYSQL {
-	# Wrapper to silence output
-	function dump {
-		$MYSQLDUMP -u$MYSQL_USER -p"$MYSQL_PASSWORD" --complete-insert "$db" > /tmp/"$db".sql
-	}
-
-	# Check if mysql dump is installed
-	MYSQLDUMP=`which mysqldump`
-	if [ -z $MYSQLDUMP ]; then
-		log_error "Cannot find mysqldump!"
-	else
-		log_verbose "MySQLDump was found at $MYSQLDUMP"
-	fi
-
-	log_verbose "Creating file /tmp/mysql_db with all databases"
-	mysql -u$MYSQL_USER -p"$MYSQL_PASSWORD" -Bse 'show databases' > $MYSQL_DB
-
-	if ! [ ${#MYSQL_EXCLUDE[@]} -eq 0 ]; then
-		log_verbose "Removing excluded databases from /tmp/mysql_db"
-		log_verbose "Excluded database/s is/are: ${MYSQL_EXCLUDE[@]}"
-
-		COUNTER=0
-		while [ $COUNTER -lt ${#MYSQL_EXCLUDE[@]} ]; do
-			sed -i "/${MYSQL_EXCLUDE[$COUNTER]}/d" $MYSQL_DB
-			let COUNTER=COUNTER+1
-		done
-	else
-		log_verbose "No databases to exclude"
-	fi
-
-	while read db; do
-		log_verbose "Creating backup of database $db"
-		dump &>/dev/null
-		if [ $? -ne 0 ]; then
-			log_warning "Cannot backup $db"
-			log_warning "I will continue anyway"
-			log_warning "But you should check what went wrong"
-		fi
-	done < $MYSQL_DB
-
-	log_verbose "Creating tar archive from *.sql in /tmp"
-	tar cpzf /tmp/mysql_databases.tar.gz /tmp/*.sql &>/dev/null
-	if [ $? -ne 0 ]; then
-		log_error "tar exit value was $?"
-		log_error "Cannot compress the databases"
-		log_error "Not sure what went wrong"
-		exit 1
-	fi
-	
-	log_verbose "Deleting uncompressed databases in /tmp"
-	rm /tmp/*.sql &>/dev/null
-
-	log_verbose "Sending databases to $HOST"
-	if [ $LOCAL_BACKUP == 1 ]; then
-		cp /tmp/mysql_databases.tar.gz $DIR_FULL/mysql_databases.tar.gz
-	else	
-		scp /tmp/mysql_databases.tar.gz ${USER}@$HOST:$DIR_FULL/mysql_databases.tar.gz &> /dev/null
-	fi	
-	if [ $? -ne 0 ]; then
-		log_error "Cannot login or connect to $HOST"
-		exit 1
-	fi
-
-	log_verbose "Deleting mysql_databases.tar.gz in /tmp"
-	if [ -f /tmp/mysql_databases.tar.gz ]; then
-		rm /tmp/mysql_databases.tar.gz
-	else
-		log_warning "/tmp/mysql_databases.tar.gz does not exist"
-		log_warning "Maybe the backup wasn't created?"
-	fi
-}
-
 function CHECK_SSH {
-	nc -z -w5 $HOST 22 &> /dev/null
+	nc -z -w5 $HOST $SSH_PORT &> /dev/null
 	
 	if [ $? -ne 0 ]; then
-		log_error "Cannot connect to host $HOST via port 22"
+		log_error "Cannot connect to host $HOST via port $SSH_PORT"
 		exit 1
 	fi
 	
@@ -707,56 +396,6 @@ function CHECK_SSH {
 			log_warning "I will continue anyway, but ssh won't connect without password!"
 		fi
 	fi
-}
-
-function BACKUP_MBR {
-# Backup partition table
-	# Wrapper to silence output
-	function backup_part_table {
-		sfdisk --quiet -d $DISK > /tmp/part_table
-	}
-
-	log_verbose "Backing up partiton table to /tmp/part_table"
-
-	if [ -d /tmp ]; then
-		if [ -f /tmp/.test ]; then
-			rm /tmp/.test &> /dev/null
-		fi
-		touch /tmp/.test &> /dev/null
-		if [ $? -ne 0 ]; then
-			log_error "/tmp not writeable"
-			exit 1
-		fi
-	else
-		log_error "/tmp doesn't exist"
-		exit 1
-	fi
-
-	backup_part_table &> /dev/null
-
-	log_verbose "Sending partition table backup to $HOST:$DIR_FULL"
-
-	if [ -f /tmp/part_table ]; then
-		if [ $LOCAL_BACKUP == 1 ]; then
-			cp /tmp/part_table $DIR_FULL/part_table &> /dev/null
-		else	
-			scp /tmp/part_table $USER@$HOST:$DIR_FULL/part_table &> /dev/null
-		fi	
-		
-		if [ $? -ne 0 ]; then
-			log_error "Cannot login or connect to $HOST"
-			exit 1
-		fi
-	else
-		log_error "Can't copy /tmp/part_table to $HOST. File doesn't exist"
-		exit 1
-	fi
-
-	log_verbose "Deleting partition table in /tmp/part_table"
-
-	if [ -f /tmp/part_table ]; then
-		rm /tmp/part_table
-	fi	
 }
 
 function BACKUP_VG_LAYOUT {
@@ -803,7 +442,7 @@ function DELETE_OLD_DATA {
 	if [ $LOCAL_BACKUP == 1 ]; then
 		find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;
 	else
-		ssh ${USER}@$HOST "find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;"
+		ssh -p $SSH_PORT ${USER}@$HOST "find $DIR/$hostname -mindepth 1 -maxdepth 1 -type d -mtime +$DAYS_OLD -exec rm -rf {} \;"
 	fi	
 	if [ $? -ne 0 ]; then
 		log_error "Cannot login or connect to $HOST"
@@ -852,13 +491,6 @@ function FINISH {
 		rm $LOCKFILE
 	fi
 	
-	if [ -f /tmp/samba4.tar.gz ]; then
-		rm /tmp/samba4.tar.gz &> /dev/null
-	fi
-		
-	if [ -d /tmp/samba ]; then
-		rm -r /tmp/samba &> /dev/null
-	fi
 	log_verbose "Done"	
 }
 trap FINISH EXIT
@@ -878,32 +510,23 @@ if [ $LOCAL_BACKUP == 1 ]; then
 		IGNORE_DIR
 	fi
 else
-	if (ssh ${USER}@$HOST "[ -d $DIR_FULL ]"); then
+	if (ssh -p $SSH_PORT ${USER}@$HOST "[ -d $DIR_FULL ]"); then
 		log_warning "Remote dir $DIR_FULL exists on $HOST"
 		log_verbose "Checking IGNORE_DIR"
 		IGNORE_DIR
 	fi
 fi	
 
-
-
 # Create remote backup dir
 log_verbose "Creating remote dir $DIR_FULL to store the backups on $HOST"
 if [ $LOCAL_BACKUP == 1 ];  then
 	mkdir -p $DIR_FULL &>/dev/null
 else
-	ssh ${USER}@$HOST mkdir -p $DIR_FULL &>/dev/null
+	ssh -p $SSH_PORT ${USER}@$HOST mkdir -p $DIR_FULL &>/dev/null
 fi	
 if [ $? -ne 0 ]; then
 	log_error "Couldn't create the remote dir $DIR_FULL to store the backups"
 	exit 1
-fi
-
-if [ $BACKUP_BOOT == 1 ]; then
-	log_message "Starting BACKUP_BOOT"
-	BACKUP_BOOT
-	BACKUP_MBR
-	log_message "BACKUP_BOOT is done"
 fi
 
 if [ $BACKUP_VG == 1 ]; then
@@ -911,18 +534,6 @@ if [ $BACKUP_VG == 1 ]; then
 			BACKUP_VG
 			BACKUP_VG_LAYOUT
 	log_message "BACKUP_VG is done"
-fi
-
-if [ $BACKUP_SAMBA == 1 ]; then
-	log_message "Starting BACKUP_SAMBA"
-	BACKUP_SAMBA
-	log_message "BACKUP_SAMBA is done"
-fi
-
-if [ $BACKUP_MYSQL == 1 ]; then
-	log_message "Starting BACKUP_MYSQL"
-	BACKUP_MYSQL
-	log_message "BACKUP_MYSQL is done"
 fi
 
 if [ $DELETE_OLD_DATA == 1 ]; then
