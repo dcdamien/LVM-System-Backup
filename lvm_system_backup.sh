@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 # Author: MrCrankHank
+# Author: dcdamien
 #
 
 # Define default vars
 start=`date +%s`
 LOCKFILE=/var/run/lvm_system_backup.lock
-NAGIOS_LOG=/var/log/lvm_system_backup_nagios_log
 NC='\e[0m'				# Message
 RED='\e[0;31m'			# Error
 ORANGE='\e[0;33m'		# Warning
@@ -15,7 +15,6 @@ MAGENTA='\e[95m'		# Verbose
 BLUE='\e[34m'			# Message
 VERBOSE=0
 BACKUP_VG=0
-NAGIOS=0
 DELETE_OLD_DATA=0
 IGNORE_DIR=0
 LOCAL_BACKUP=0
@@ -151,15 +150,6 @@ if ! [ -z $BACKUP_VG ]; then
 	fi
 fi
 
-log_verbose "Checking if the NAGIOS feature is enabled"
-if ! [ -z $NAGIOS ]; then
-	if [ $NAGIOS == 1 ]; then
-		log_message "NAGIOS feature is enabled"
-	else
-		log_message "NAGIOS feature is disabled"
-	fi
-fi
-
 log_verbose "Checking if the DELETE_OLD_DATA feature is enabled"
 if ! [ -z $DELETE_OLD_DATA ]; then
 	if [ $DELETE_OLD_DATA == 1 ]; then
@@ -268,8 +258,6 @@ function BACKUP_VG {
 
 		# List all volumes excluding snapshots
 		lvs -o lv_name,lv_attr ${VG_NAME[$COUNTER2]} --noheadings | egrep '\s+[Vo-][a-z-]*$' | awk '{ print $1 }' > $LVS
-
-		# lvdisplay ${VG_NAME[$COUNTER2]} | grep -e "LV Name" | tr -d ' ' | sed -e 's/LVName//g' > $LVS
 
 		if [ $? -ne 0 ]; then
 			log_error "Couldn't create the list with logical volumes"
@@ -532,18 +520,5 @@ fi
 end=`date +%s`
 log_verbose "Execution took $((end-start)) seconds"
 
-# Write nagios log
-if [ $NAGIOS == 1 ]; then
-	log_verbose "Creating log file for nagios plugin"
-
-	if [ -f $NAGIOS_LOG ]; then
-		rm $NAGIOS_LOG
-	fi
-	echo "$hostname" >> $NAGIOS_LOG
-	echo "$datum" >> $NAGIOS_LOG
-	echo "$time" >> $NAGIOS_LOG
-	echo "$((end-start)) seconds" >> $NAGIOS_LOG
-	echo "successful" >> $NAGIOS_LOG
-fi
 
 log_success "Backup successful!"
